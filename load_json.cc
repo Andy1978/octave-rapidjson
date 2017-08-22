@@ -16,25 +16,25 @@
 #define DEBUG
 
 #ifdef DEBUG
- #define DBG_MSG2(d, a, b) DBS(d);\
+#define DBG_MSG2(d, a, b) DBS(d);\
                    std::cout << __FILE__ << ":"\
                              << __FUNCTION__ << ":"\
                              << __LINE__ << " "\
                              << a << " "\
                              << b << std::endl
- #define DBG_MSG1(d, a) DBG_MSG2(d, a, "")
- #define DBS(d) for (int __k__ = 0; __k__ < d; ++__k__) std::cout << "-";
+#define DBG_MSG1(d, a) DBG_MSG2(d, a, "")
+#define DBS(d) for (int __k__ = 0; __k__ < d; ++__k__) std::cout << "-";
 #else
- #define DBG_MSG2(d, a, b)
- #define DBG_MSG1(d, a)
- #define DBS(d)
+#define DBG_MSG2(d, a, b)
+#define DBG_MSG1(d, a)
+#define DBS(d)
 #endif
 
 
 class parse_state
 {
 public:
-  
+
   parse_state (int depth)
     : _depth (depth),
       is_array (0),
@@ -57,31 +57,31 @@ public:
     DBG_MSG1(_depth, "");
 
     if (is_array)
-      {
-        if (v.is_string ())
-          array_is_numeric = false;
+    {
+      if (v.is_string ())
+        array_is_numeric = false;
 
-        assert (array.rows () == 1);
-        unsigned c = array.columns ();
-        DBG_MSG2(_depth, "array.columns () = ", c);
+      assert (array.rows () == 1);
+      unsigned c = array.columns ();
+      DBG_MSG2(_depth, "array.columns () = ", c);
 
-        if (array_items == c)
-          array.resize (dim_vector (1, 2 * c));
+      if (array_items == c)
+        array.resize (dim_vector (1, 2 * c));
 
-        array(0, array_items++) = v;
-      }
+      array(0, array_items++) = v;
+    }
     else
-      {
-        result.contents (_key) = v;
-      }
+    {
+      result.contents (_key) = v;
+    }
   }
-  
+
   void key (const char* str)
   {
     DBG_MSG1(_depth, str);
     _key = str;
   }
-  
+
   void start_object ()
   {
     DBG_MSG1(_depth, "");
@@ -99,16 +99,16 @@ public:
     DBG_MSG2(_depth, "array_items = ", array_items);
     //assert (elementCount == ps.back().array_items);
     is_array = false;
-    
+
     // return Matrix if the array didn't contains string
     if (array_is_numeric)
-      {
-        DBG_MSG1(_depth, "array_is_numeric");
-        RowVector tmp(array_items);
-        for (unsigned k = 0; k < array_items; ++k)
-          tmp (k) = array(k).double_value();
-        result.contents (_key) = tmp;
-      }
+    {
+      DBG_MSG1(_depth, "array_is_numeric");
+      RowVector tmp(array_items);
+      for (unsigned k = 0; k < array_items; ++k)
+        tmp (k) = array(k).double_value();
+      result.contents (_key) = tmp;
+    }
     else
       result.contents (_key) = array;
   }
@@ -124,15 +124,15 @@ private:
 
 class MyHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, MyHandler>
 {
-public: 
- 
+public:
+
   octave_scalar_map result;
   std::vector <parse_state*> ps;
-  
+
 public:
 
   //MyHandler ()
-    
+
   bool Null()
   {
     DBG_MSG1 (0, "");
@@ -211,12 +211,12 @@ public:
     (void) memberCount;
     int n = ps.size ();
     DBG_MSG2 (0, "ps.size() = ", n);
-    
+
     if (n > 1)
       ps[n-2]->push_back (ps[n-1]->result);
     else
       result = ps[n-1]->result;
-    
+
     delete ps.back ();
     ps.pop_back ();
 
@@ -241,7 +241,7 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
 {
   if (args.length () != 1)
     print_usage ();
-    
+
   MyHandler handler;
   rapidjson::Reader reader;
   std::string json = args(0).string_value ();
