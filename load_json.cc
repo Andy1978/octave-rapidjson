@@ -24,6 +24,7 @@
 #include "rapidjson/document.h"
 #include "rapidjson/reader.h"
 #include "rapidjson/filereadstream.h"
+#include "rapidjson/error/en.h"
 
 #define INITIAL_ARRAY_SIZE 64
 //#define DEBUG
@@ -266,10 +267,13 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
   DBG_MSG2(0, "json = ", json);
 
   rapidjson::StringStream ss(json.c_str());
-  int ret = reader.Parse(ss, handler);
-  if (! ret)
-    error ("Parse error.");
-
+  rapidjson::ParseResult ok = reader.Parse(ss, handler);
+  if (! ok)
+    {
+      error ("JSON parse error: '%s' at offset %u",
+             GetParseError_En (ok.Code()),
+             ok.Offset());
+    }
   //~ Matrix a(dim_vector(3,2));
   //~ for (int k=0; k<a.numel();++k)
   //~ a.fortran_vec()[k] = k;
