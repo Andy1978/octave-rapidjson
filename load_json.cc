@@ -17,6 +17,7 @@
 // <http://www.gnu.org/licenses/>.
 
 #include <octave/oct.h>
+#include <octave/oct-map.h>
 #include <octave/Cell.h>
 
 #include <vector>
@@ -70,7 +71,12 @@ public:
 
     if (is_array)
     {
+#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION >0 || OCTAVE_MAJOR_VERSION > 4
+
       if (! v.isnumeric ())
+#else
+      if (! v.is_numeric_type ())
+#endif
         array_is_numeric = false;
 
       assert (array.rows () == 1);
