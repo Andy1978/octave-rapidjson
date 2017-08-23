@@ -12,8 +12,8 @@
  * Versuch jsonlab zu ersetzen
  */
 
-#define INITIAL_ARRAY_SIZE 2
-#define DEBUG
+#define INITIAL_ARRAY_SIZE 64
+//#define DEBUG
 
 #ifdef DEBUG
 #define DBG_MSG2(d, a, b) DBS(d);\
@@ -38,8 +38,6 @@ public:
   parse_state (int depth)
     : _depth (depth),
       is_array (0),
-      array_is_numeric (true),
-      array_items (0),
       array (dim_vector (1, INITIAL_ARRAY_SIZE))
   {
     DBG_MSG2(_depth, "constructor", _depth);
@@ -92,6 +90,8 @@ public:
   {
     DBG_MSG1(_depth, "");
     is_array = true;
+    array_is_numeric = true;
+    array_items = 0;
   }
 
   void end_array ()
@@ -110,7 +110,11 @@ public:
       result.contents (_key) = tmp;
     }
     else
+    {
+      // FIMXE: looks like there is no "extract" for Cells?
+      array.resize (dim_vector (array.rows(), array_items));
       result.contents (_key) = array;
+    }
   }
 
 private:
@@ -183,6 +187,7 @@ public:
 
   bool String(const char* str, rapidjson::SizeType length, bool copy)
   {
+    (void) length;
     (void) copy;
     DBG_MSG2 (0, str, length);
     ps.back()->push_back (str);
@@ -249,10 +254,14 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
 
   rapidjson::StringStream ss(json.c_str());
   int ret = reader.Parse(ss, handler);
-//~ #ifdef DEBUG
-  //~ std::cout << "ret = " << ret << std::endl;
-//~ #endif
+  if (! ret)
+    error ("Parse error.");
 
-  //return ovl (handler.result);
-  return ovl (123);
+  //~ Matrix a(dim_vector(3,2));
+  //~ for (int k=0; k<a.numel();++k)
+  //~ a.fortran_vec()[k] = k;
+  //~ std::cout << a << std::endl;
+  //~ std::cout << a.extract(0,1,2,1) << std::endl;
+
+  return ovl (handler.result);
 }
