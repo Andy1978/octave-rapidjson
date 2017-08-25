@@ -71,12 +71,11 @@ public:
 
     if (is_array)
     {
-#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION >0 || OCTAVE_MAJOR_VERSION > 4
-
-      if (! v.isnumeric ())
-#else
+//#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION >0 || OCTAVE_MAJOR_VERSION > 4
+//      if (! v.isnumeric ())
+//#else
       if (! v.is_numeric_type ())
-#endif
+//#endif
         array_is_numeric = false;
 
       assert (array.rows () == 1);
