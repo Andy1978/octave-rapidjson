@@ -2,6 +2,8 @@
 
 [GNU Octave](https://www.gnu.org/software/octave/) wrapper around [RapidJSON](http://rapidjson.org/)
 
+If you want a fairly complete implementation you might have a look at [JSONlab](http://iso2mesh.sourceforge.net/cgi-bin/index.cgi?jsonlab) which is written purely in .m files (and thus very slow compared to this wrapper using RapidJSON)
+
 ## Ready for test
 
 * `load_json (json_string)`. If you want to parse from file use `load_json (fileread (filename))`
