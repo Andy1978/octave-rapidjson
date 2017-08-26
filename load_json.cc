@@ -287,3 +287,24 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
 
   return ovl (handler.result);
 }
+
+/*
+%!test
+%! json = '{ "hello" : "world", "t" : true , "f" : false, "n": null, "i":-123, "u":456, "pi": 3.1416, "li": -765432986, "a":[1, 2, 3, 4], "b": ["foo", 4] } ';
+%! r = load_json (json);
+%! assert (r.hello, "world")
+%! assert (r.t, true)
+%! assert (r.f, false)
+%! assert (r.n, [])
+%! assert (r.i, int32 (-123))
+%! assert (r.u, uint32 (456))
+%! assert (r.pi, pi, 1e-5)
+%! assert (r.a, [1 2 3 4])
+%! assert (r.b, {"foo", 4})
+
+%!xtest
+%! disp ("Matrix not yet supported")
+%! json = '{ "a": [[1,2],[3,4]]}';
+%! r =load_json (json);
+%! assert (r.a, [1 2; 3 4]);
+*/
