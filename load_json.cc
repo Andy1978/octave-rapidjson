@@ -70,27 +70,27 @@ public:
     DBG_MSG1(_depth, "");
 
     if (is_array)
-    {
+      {
 //#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION >0 || OCTAVE_MAJOR_VERSION > 4
 //      if (! v.isnumeric ())
 //#else
-      if (! v.is_numeric_type ())
+        if (! v.is_numeric_type ())
 //#endif
-        array_is_numeric = false;
+          array_is_numeric = false;
 
-      assert (array.rows () == 1);
-      unsigned c = array.columns ();
-      DBG_MSG2(_depth, "array.columns () = ", c);
+        assert (array.rows () == 1);
+        unsigned c = array.columns ();
+        DBG_MSG2(_depth, "array.columns () = ", c);
 
-      if (array_items == c)
-        array.resize (dim_vector (1, 2 * c));
+        if (array_items == c)
+          array.resize (dim_vector (1, 2 * c));
 
-      array(0, array_items++) = v;
-    }
+        array(0, array_items++) = v;
+      }
     else
-    {
-      result.contents (_key) = v;
-    }
+      {
+        result.contents (_key) = v;
+      }
   }
 
   void key (const char* str)
@@ -121,19 +121,19 @@ public:
 
     // return Matrix if the array didn't contains string
     if (array_is_numeric)
-    {
-      DBG_MSG1(_depth, "array_is_numeric");
-      RowVector tmp(array_items);
-      for (unsigned k = 0; k < array_items; ++k)
-        tmp (k) = array(k).double_value();
-      result.contents (_key) = tmp;
-    }
+      {
+        DBG_MSG1(_depth, "array_is_numeric");
+        RowVector tmp(array_items);
+        for (unsigned k = 0; k < array_items; ++k)
+          tmp (k) = array(k).double_value();
+        result.contents (_key) = tmp;
+      }
     else
-    {
-      // FIMXE: looks like there is no "extract" for Cells?
-      array.resize (dim_vector (array.rows(), array_items));
-      result.contents (_key) = array;
-    }
+      {
+        // FIMXE: looks like there is no "extract" for Cells?
+        array.resize (dim_vector (array.rows(), array_items));
+        result.contents (_key) = array;
+      }
   }
 
 private:
