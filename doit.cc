@@ -8,7 +8,7 @@ using namespace std;
 class dynNDArray
 {
 public:
-  
+
   dynNDArray ()
 //    : array (dim_vector (1, INITIAL_ARRAY_SIZE), -1)
     : real_size (0, 0),
@@ -16,9 +16,9 @@ public:
       write_pos (dim_vector (2, 1), 0),
       depth (0),
       last_was_cb (false)
-    {
-      //cout << "*******************************************" << endl;
-    }
+  {
+    //cout << "*******************************************" << endl;
+  }
 
   //dim_vector capacity;
   dim_vector real_size;
@@ -26,7 +26,7 @@ public:
   NDArray array;
 
   // index where the next value is written
-  Array<int> write_pos;   
+  Array<int> write_pos;
 
   // "depth" of the current position
   // inc with [, dec with ]
@@ -37,7 +37,7 @@ public:
 
 
 // folgt [ einer vorherigen ], wird der write_pos die Zeile inkrementiert
-// folgt [ einer vorherigen [, wird eine neue Dimension angelegt und write_pos wird in der Dimension erhöht  
+// folgt [ einer vorherigen [, wird eine neue Dimension angelegt und write_pos wird in der Dimension erhöht
 
 
   // opening bracket [
@@ -84,30 +84,30 @@ public:
 
         write_pos (0) = 0;
       }
-    
-    
+
+
     last_was_cb = false;
 
     //print_state ("ob() END");
   }
-  
+
   // closing bracket
   void cb ()
   {
     depth--;
     last_was_cb = true;
-    
+
     //print_state ("cb () ");
-    
+
     // write_pos(0) was already incremented
     write_pos(0)--;
-    
+
     // store actually needed size
     for (int k = 0; k < write_pos.numel(); ++k)
       if ((write_pos(k) + 1) > real_size(k))
         real_size(k) = write_pos(k) + 1;
-    
-    
+
+
     if (depth == 0)
       {
         array.resize (real_size);
@@ -116,12 +116,12 @@ public:
           p(k) = k;
         p(0) = 1;
         p(1) = 0;
-        
+
         array = array.permute (p);
       }
     //print_state ("cb()");
   }
-  
+
   void value (double v)
   {
     // check if the array needs to be resized
@@ -140,18 +140,18 @@ public:
           //cout << " after" << endl;
 
         }
-    
+
     //cout << v;
     //print_state (" value");
     array (write_pos) = v;
-    
+
     write_pos(0)++;
   }
 
   void print_state (const char *pre)
   {
     cout << pre << ", write_pos = [";
-    for (int k=0; k<write_pos.numel();++k)
+    for (int k=0; k<write_pos.numel(); ++k)
       {
         if (k > 0)
           cout << " ";
@@ -159,17 +159,17 @@ public:
       }
     cout << "], depth =  " << depth << ", last_was_cb = " << last_was_cb << endl;
   }
-  
+
   void print_dim (dim_vector s)
   {
-    for (int k=0; k<s.ndims();++k)
+    for (int k=0; k<s.ndims(); ++k)
       {
         if (k > 0)
           cout << " ";
         cout << s(k);
       }
-  }    
-  
+  }
+
 };
 
 // {"a":[1,2,3]}
@@ -187,7 +187,7 @@ DEFUN_DLD (doit, args,, "doit")
   coord (1, 0) = 2;
   coord (2, 0) = 3;
   coord (3, 0) = 4;
-  
+
   P(coord) = 123;;
 
   RowVector x(4);
@@ -197,7 +197,7 @@ DEFUN_DLD (doit, args,, "doit")
   x(3) = 2;
   P(x) = 444;
 #endif
-/******************************************/
+  /******************************************/
 
   //~ dim_vector dim;
   //~ NDArray tmp = NDArray(dim, 0);
@@ -205,7 +205,7 @@ DEFUN_DLD (doit, args,, "doit")
   //~ // [
   //~ dim.resize (1);
   //~ dim(0) = 5;     // initial size
-  
+
   //~ tmp.resize (dim, 0);
 
   //~ // 10
@@ -238,7 +238,7 @@ DEFUN_DLD (doit, args,, "doit")
   b.value (6);  // (1,2)
   b.cb ();
   b.cb ();
-  
+
   // {"c":[[[1,2],[3,4]],[[10,20],[30,40]]]}
   dynNDArray c;
   c.ob ();
@@ -297,13 +297,13 @@ DEFUN_DLD (doit, args,, "doit")
   d.cb ();
   d.cb ();
   d.cb ();
-  
+
   // [[[100,200],[300,400],[500,600]],[[1000,2000],[3000,4000],[5000,6000]]]]}'
 
   d.ob ();
   d.ob ();
   d.ob ();
-  d.value (100);  
+  d.value (100);
   d.value (200);
   d.cb ();
   d.ob ();
@@ -331,7 +331,7 @@ DEFUN_DLD (doit, args,, "doit")
   d.cb ();
   d.cb ();
   d.cb ();
-  
+
   cout << "real_size = " << endl;
   for (int k = 0; k < d.real_size.ndims(); ++k)
     cout << d.real_size(k) << endl;
