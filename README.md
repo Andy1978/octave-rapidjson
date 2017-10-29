@@ -11,7 +11,7 @@ If you want a fairly complete implementation you might have a look at [JSONlab](
 ## ToDo
 
 * Add many, many tests and "make check" target to Makefile
-* Implement 2D arrays (Matrix) and later N-dimesnional arrays
+* Implement 2D arrays (Matrix) and later N-dimensional arrays
 * Implement `save_json (json_string)`
 
 ## Optimization ideas

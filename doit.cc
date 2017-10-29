@@ -1,5 +1,7 @@
 #include <octave/oct.h>
 #include <octave/oct-map.h>
+#include <ostream>
+#include <iomanip>
 
 #define INITIAL_ARRAY_SIZE 2
 
@@ -10,14 +12,13 @@ class dynNDArray
 public:
 
   dynNDArray ()
-//    : array (dim_vector (1, INITIAL_ARRAY_SIZE), -1)
     : real_size (0, 0),
-      array (dim_vector (INITIAL_ARRAY_SIZE, INITIAL_ARRAY_SIZE), 0),
+      array (dim_vector (INITIAL_ARRAY_SIZE, INITIAL_ARRAY_SIZE), lo_ieee_na_value ()),
       write_pos (dim_vector (2, 1), 0),
       depth (0),
       last_was_cb (false)
   {
-    //cout << "*******************************************" << endl;
+    cout << "*******************************************" << endl;
   }
 
   //dim_vector capacity;
@@ -28,24 +29,47 @@ public:
   // index where the next value is written
   Array<int> write_pos;
 
-  // "depth" of the current position
-  // inc with [, dec with ]
-  int depth;
-
+  int depth; // "depth" of the current position
+             // increments with '[', decrements with ']'
 
   bool last_was_cb;
 
 
-// folgt [ einer vorherigen ], wird der write_pos die Zeile inkrementiert
-// folgt [ einer vorherigen [, wird eine neue Dimension angelegt und write_pos wird in der Dimension erhöht
+  string out_dim_vector (dim_vector d)
+  {
+    ostringstream tmp;
+    tmp << "[";
+    for (int k=0; k<d.ndims(); ++k)
+      {
+        if (k > 0)
+          tmp << ",";
+        tmp << d(k);
+      }
+    tmp << "]";
+    return tmp.str ();
+  }
+  
+  string out_array (Array<int> d)
+  {
+    ostringstream tmp;
+    tmp << "[";
+    for (int k=0; k<d.ndims(); ++k)
+      {
+        if (k > 0)
+          tmp << ",";
+        tmp << d(k);
+      }
+    tmp << "]";
+    return tmp.str ();
+  }
 
-
-  // opening bracket [
+  // opening bracket '['
   void ob ()
   {
     depth++;
 
-    if (last_was_cb) // '[' after ']'
+    // folgt '[' einer vorherigen ']', wird der write_pos die Zeile inkrementiert
+    if (last_was_cb)
       {
         // write_pos wächst ja mit depth, daher von hinten zählen
         int depth_index = write_pos.numel() - (depth - 1);
@@ -56,39 +80,26 @@ public:
           write_pos (k) = 0;
       }
     else
+    // folgt '[' einer vorherigen '[', wird ggf. eine neue Dimension angelegt und write_pos wird in der Dimension erhöht
       {
         if (depth > write_pos.numel())
           {
             int new_dims = write_pos.numel() + 1;
-            //cout << "new_dims = " << new_dims << endl;
             write_pos.resize (dim_vector (new_dims, 1), 0);
             real_size.resize (new_dims);
 
-            // add new dimension
+            // add new dimension to array
             dim_vector s = array.dims ();
-            //print_dim (s);
-            //cout << " before" << endl;
             s.resize (new_dims);
             s(new_dims - 1) = INITIAL_ARRAY_SIZE;
             array.resize (s);
-
-            //print_dim (array.dims ());
-            //cout << " after" << endl;
-
           }
-        //
-        //print_write_pos ();
-        //capacity.resize (dim_vector (new_dims, 0), 0);
-        //array.resize (
-
 
         write_pos (0) = 0;
       }
 
-
+    print_state ("[");
     last_was_cb = false;
-
-    //print_state ("ob() END");
   }
 
   // closing bracket
@@ -96,8 +107,6 @@ public:
   {
     depth--;
     last_was_cb = true;
-
-    //print_state ("cb () ");
 
     // write_pos(0) was already incremented
     write_pos(0)--;
@@ -111,15 +120,16 @@ public:
     if (depth == 0)
       {
         array.resize (real_size);
-        Array<int> p(dim_vector(real_size.ndims(), 1));
-        for (int k = 2; k < real_size.ndims(); ++k)
-          p(k) = k;
-        p(0) = 1;
-        p(1) = 0;
-
-        array = array.permute (p);
+        
+        // Die ersten 2 Dimensionen drehen
+        //Array<int> p(dim_vector(real_size.ndims(), 1));
+        //for (int k = 2; k < real_size.ndims(); ++k)
+        //  p(k) = k;
+        //p(0) = 1;
+        //p(1) = 0;
+        //array = array.permute (p);
       }
-    //print_state ("cb()");
+    print_state ("]");
   }
 
   void value (double v)
@@ -138,7 +148,6 @@ public:
           array.resize (s);
           //print_dim (array.dims ());
           //cout << " after" << endl;
-
         }
 
     //cout << v;
@@ -146,38 +155,45 @@ public:
     array (write_pos) = v;
 
     write_pos(0)++;
+
+    char buf[10];
+    snprintf (buf, 10, "%.1f", v);
+    print_state (buf);
   }
 
-  void print_state (const char *pre)
+  void print_state (const char *token)
   {
-    cout << pre << ", write_pos = [";
-    for (int k=0; k<write_pos.numel(); ++k)
+#define FW 14
+    static int header = 1;
+    if (header)
       {
-        if (k > 0)
-          cout << " ";
-        cout << write_pos(k);
+        
+        cout << setw (8) << "token";
+        cout << setw (6) << "depth";
+        cout << setw (12) << "last_was_cb";
+        cout << setw (FW) << "write_pos";
+        cout << setw (FW) << "real_size";
+        cout << setw (FW) << "array.dims()";
+        cout << endl;
       }
-    cout << "], depth =  " << depth << ", last_was_cb = " << last_was_cb << endl;
-  }
+      
+    cout << setw (8) << token;
+    cout << setw (6) << depth;
+    cout << setw (12) << last_was_cb;
+    cout << setw (FW) << out_array (write_pos);
+    cout << setw (FW) << out_dim_vector (real_size);
+    cout << setw (FW) << out_dim_vector (array.dims());
+    cout << endl;
 
-  void print_dim (dim_vector s)
-  {
-    for (int k=0; k<s.ndims(); ++k)
-      {
-        if (k > 0)
-          cout << " ";
-        cout << s(k);
-      }
+    header = 0;
   }
 
 };
 
-// {"a":[1,2,3]}
-// {"b":[[1,2],[3,4],[5,6]]}
-// {"c":[[[1,2],[3,4]],[[10,20],[30,40]]]}
-
 DEFUN_DLD (doit, args,, "doit")
 {
+  
+  (void) args;
 #if 0
   dim_vector dim = dim_vector(3,4,5,6);
   NDArray P = NDArray(dim, 0);
@@ -213,7 +229,7 @@ DEFUN_DLD (doit, args,, "doit")
   //~ // 20
   //~ tmp (0, 2) = 20;
 
-
+#if 0
   // {"a":[1,2,3]}
   dynNDArray a;
   a.ob ();
@@ -227,7 +243,7 @@ DEFUN_DLD (doit, args,, "doit")
   b.ob ();
   b.ob ();
   b.value (1);  // (0,0)
-  b.value (2);  // (1,0)
+  //b.value (2);  // (1,0)
   b.cb ();
   b.ob ();
   b.value (3);  // (0,1)
@@ -238,7 +254,9 @@ DEFUN_DLD (doit, args,, "doit")
   b.value (6);  // (1,2)
   b.cb ();
   b.cb ();
+#endif
 
+#if 0
   // {"c":[[[1,2],[3,4]],[[10,20],[30,40]]]}
   dynNDArray c;
   c.ob ();
@@ -263,7 +281,9 @@ DEFUN_DLD (doit, args,, "doit")
   c.cb ();
   c.cb ();
   c.cb ();
+#endif
 
+#if 1
   // {"d":[[[[1,2],[3,4],[5,6]],[[10,20],[30,40],[50,60]]],
   dynNDArray d;
   d.ob ();
@@ -332,10 +352,10 @@ DEFUN_DLD (doit, args,, "doit")
   d.cb ();
   d.cb ();
 
-  cout << "real_size = " << endl;
-  for (int k = 0; k < d.real_size.ndims(); ++k)
-    cout << d.real_size(k) << endl;
+#endif
+
+  return ovl (d.array);
   //return ovl (a.array, b.array, c.array);
   //return ovl (a.array);
-  return ovl(a.array, b.array, c.array, d.array);
+  //return ovl(a.array, b.array, c.array, d.array);
 }

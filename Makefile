@@ -2,7 +2,12 @@
 
 CXXFLAGS = `pkg-config --cflags RapidJSON`
 
+all: doit.oct
+
 load_json.oct: load_json.cc
+	mkoctfile -Wall -Wextra $(CXXFLAGS) $<
+
+doit.oct: doit.cc
 	mkoctfile -Wall -Wextra $(CXXFLAGS) $<
 
 style:
