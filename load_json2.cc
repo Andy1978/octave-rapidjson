@@ -28,7 +28,7 @@
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/error/en.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #include <iomanip>
@@ -52,7 +52,7 @@ public:
 
   parse_state (int depth)
     : _depth (depth),
-      is_array (0)
+      is_json_array (0)
   {
     DBG_MSG2(_depth, "constructor", _depth);
   }
@@ -66,18 +66,29 @@ public:
 
   void push_back (octave_value v)
   {
-    DBG_MSG2(_depth, "is_array=", is_array);
+    DBG_MSG2(_depth, "is_json_array=", is_json_array);
 
-    if (is_array)
+    if (is_json_array)
       {
-#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION >0 || OCTAVE_MAJOR_VERSION > 4
+#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION > 0 || OCTAVE_MAJOR_VERSION > 4
         if (! v.isnumeric ())
 #else
         if (! v.is_numeric_type ())
 #endif
-          array_is_numeric = false;
+          {
+            if (array_is_numeric)
+              {
+                // copy NDArray to Cell
+                cell_array = numeric_array;
+                
+                // FIXME: numeric_array could be cleared here
+                //numeric_array.clear ();
+              }
+            
+            array_is_numeric = false;
+          }
 
-        array.value (v.double_value());
+        numeric_array.value (v.double_value());
       }
     else
       {
@@ -100,11 +111,11 @@ public:
   void start_array ()
   {
     DBG_MSG1(_depth, "");
-    is_array = true;
+    is_json_array = true;
     array_is_numeric = true;
     //array_items = 0;
     
-    array.ob ();
+    numeric_array.ob ();
   }
 
   void end_array ()
@@ -112,9 +123,9 @@ public:
     DBG_MSG1(_depth, "");
     //DBG_MSG2(_depth, "array_items = ", array_items);
     //assert (elementCount == ps.back().array_items);
-    is_array = false;
+    is_json_array = false;
 
-    array.cb ();
+    numeric_array.cb ();
 
     //~ // return Matrix if the array didn't contains string
     //~ if (array_is_numeric)
@@ -132,20 +143,21 @@ public:
         //~ result.contents (_key) = array;
       //~ }
       
-    if (array.get_depth () == 0)
-      result.contents (_key) = array.get_array ();
+    if (numeric_array.get_depth () == 0)
+      result.contents (_key) = numeric_array.get_array ();
   }
 
 private:
-  int _depth;             //only for debug output
+  int _depth;             // only for debug output
   int array_depth;
   std::string _key;
-  bool is_array;
-  bool array_is_numeric;
-  //unsigned array_items;
+  bool is_json_array;     // we are between start_array() and end_array()
+  bool array_is_numeric;  // the current processed array consists purly of numeric values
+                          // and can thus be mapped to "NDArray".
+                          // If false it's mapped to "Cell"
 
-  //dynContainer<Cell> array;
-  dynContainer<NDArray> array;
+  dynContainer<Cell> cell_array;
+  dynContainer<NDArray> numeric_array;
 };
 
 class JSON_Handler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, JSON_Handler>

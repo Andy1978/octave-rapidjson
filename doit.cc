@@ -40,9 +40,9 @@ DEFUN_DLD (doit, args,, "doit")
   //~ // 20
   //~ tmp (0, 2) = 20;
 
-#if 0
+#if 1
   // {"a":[1,2,3]}
-  dynContainer a;
+  dynContainer<NDArray> a;
   a.ob ();
   a.value (1);  // (0,0)
   a.value (2);  // (1,0)
@@ -50,7 +50,9 @@ DEFUN_DLD (doit, args,, "doit")
   a.cb ();
 
   // {"b":[[1,2],[3,4],[5,6]]}
-  dynContainer b;
+  //dynContainer<Cell> b;
+  dynContainer<NDArray> b;
+
   b.ob ();
   b.ob ();
   b.value (1);  // (0,0)
@@ -65,6 +67,12 @@ DEFUN_DLD (doit, args,, "doit")
   b.value (6);  // (1,2)
   b.cb ();
   b.cb ();
+  
+  dynContainer<Cell> c;
+  c = b;
+
+  //dynContainer<NDArray> d;
+  //d = a;
 #endif
 
 #if 0
@@ -94,7 +102,7 @@ DEFUN_DLD (doit, args,, "doit")
   c.cb ();
 #endif
 
-#if 1
+#if 0
   // {"d":[[[[1,2],[3,4],[5,6]],[[10,20],[30,40],[50,60]]],
   dynContainer<Cell> d;
   //dynContainer<NDArray> d;
@@ -166,7 +174,8 @@ DEFUN_DLD (doit, args,, "doit")
 
 #endif
 
-  return ovl (d.get_array ());
+  return ovl (c.get_array ());
+  //return ovl (a.get_array (), b.get_array ());
   //return ovl (a.array, b.array, c.array);
   //return ovl (a.array);
   //return ovl(a.array, b.array, c.array, d.array);

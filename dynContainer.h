@@ -6,7 +6,7 @@
 #define INITIAL_ARRAY_SIZE 2
 #define GROWTH_FACTOR 1.5
 
-#define DEBUG
+//#define DEBUG
 
 using namespace std;
 
@@ -14,6 +14,9 @@ template <typename base_container>
 class dynContainer
 {
 private:
+
+  template <class U>
+  friend class dynContainer;
 
   dim_vector real_size;   // The really used size in each dimension.
                           // It's always smaller than the reserved size in "array"
@@ -70,6 +73,7 @@ private:
     header = 0;
   }
 #endif
+
 
 public:
 
@@ -188,5 +192,24 @@ public:
   int get_depth ()
   {
     return depth;
+  }
+
+  void operator = (dynContainer<NDArray> &o)
+  {
+      real_size = o.real_size;
+      write_pos = o.write_pos;
+      depth = o.depth;
+      last_was_cb = o.last_was_cb;
+      
+      cout << "copy NDArray..." << endl;
+      cout << "real_size " << real_size(0) << " " << real_size(1) << endl;
+      cout << "write_pos " << write_pos(0) << " " << write_pos(1) << endl;
+      cout << "depth = " << depth << endl;
+      
+      array.resize (real_size);
+      octave_idx_type nel = o.array.numel ();
+      cout << "nel = " << nel << endl;
+      for (octave_idx_type i = 0; i < nel; i++)
+        array.xelem (i) = o.array(i);
   }
 };
