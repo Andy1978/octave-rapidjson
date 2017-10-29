@@ -6,7 +6,7 @@
 #define INITIAL_ARRAY_SIZE 2
 #define GROWTH_FACTOR 1.5
 
-//#define DEBUG
+#define DEBUG
 
 using namespace std;
 
@@ -183,5 +183,10 @@ public:
   base_container const& get_array ()
   {
     return array;
+  }
+  
+  int get_depth ()
+  {
+    return depth;
   }
 };
