@@ -48,7 +48,7 @@ public:
     tmp << "]";
     return tmp.str ();
   }
-  
+
   string out_array (Array<int> d)
   {
     ostringstream tmp;
@@ -116,18 +116,17 @@ public:
       if ((write_pos(k) + 1) > real_size(k))
         real_size(k) = write_pos(k) + 1;
 
-
     if (depth == 0)
       {
         array.resize (real_size);
-        
+
         // Die ersten 2 Dimensionen drehen
-        //Array<int> p(dim_vector(real_size.ndims(), 1));
-        //for (int k = 2; k < real_size.ndims(); ++k)
-        //  p(k) = k;
-        //p(0) = 1;
-        //p(1) = 0;
-        //array = array.permute (p);
+        Array<int> p(dim_vector(real_size.ndims(), 1));
+        for (int k = 2; k < real_size.ndims(); ++k)
+          p(k) = k;
+        p(0) = 1;
+        p(1) = 0;
+        array = array.permute (p);
       }
     print_state ("]");
   }
@@ -167,7 +166,7 @@ public:
     static int header = 1;
     if (header)
       {
-        
+
         cout << setw (8) << "token";
         cout << setw (6) << "depth";
         cout << setw (12) << "last_was_cb";
@@ -176,7 +175,7 @@ public:
         cout << setw (FW) << "array.dims()";
         cout << endl;
       }
-      
+
     cout << setw (8) << token;
     cout << setw (6) << depth;
     cout << setw (12) << last_was_cb;
@@ -192,7 +191,7 @@ public:
 
 DEFUN_DLD (doit, args,, "doit")
 {
-  
+
   (void) args;
 #if 0
   dim_vector dim = dim_vector(3,4,5,6);
