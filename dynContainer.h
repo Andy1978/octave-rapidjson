@@ -8,25 +8,33 @@
 
 //#define DEBUG
 
+#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION > 0 || OCTAVE_MAJOR_VERSION > 4
+  #define ISNUMERIC(v) v.isnumeric ()
+#else
+  #define ISNUMERIC(v) v.is_numeric_type ()
+#endif
+
+
 using namespace std;
 
-template <typename base_container> 
 class dynContainer
 {
 private:
 
-  template <class U>
-  friend class dynContainer;
+  NDArray DynArray;
+  Cell DynCell;
 
   dim_vector real_size;   // The really used size in each dimension.
                           // It's always smaller than the reserved size in "array"
-
-  base_container array;   // typically "NDArray" or "Cell"
 
   Array<int> write_pos;   // position where the next call to "value" is written
 
   int depth;              // "depth" of the current position
                           // increments with "ob", decrements with "cb"
+
+  bool array_is_numeric;  // the current processed array consists purly of
+                          // numeric values and can thus be mapped to "NDArray".
+                          // If false it's mapped to "Cell"
 
   bool last_was_cb;       // The last processed square bracked was "cb"
 
@@ -46,42 +54,76 @@ private:
     return tmp.str ();
   }
 
-  void print_state (const char *token)
+  template <typename T>
+  void print_state (T pre)
   {
-#define FW 14
     static int header = 1;
     if (header)
       {
 
-        cout << setw (8) << "token";
+        cout << setw (8) << "pre";
         cout << setw (6) << "depth";
         cout << setw (12) << "last_was_cb";
-        cout << setw (FW) << "write_pos";
-        cout << setw (FW) << "real_size";
-        cout << setw (FW) << "array.dims()";
+        cout << setw (14) << "write_pos";
+        cout << setw (14) << "real_size";
+        cout << setw (18) << "DynArray.dims()";
+        cout << setw (18) << "DynCell.dims()";
         cout << endl;
       }
 
-    cout << setw (8) << token;
+    cout << setw (8) << pre;
     cout << setw (6) << depth;
     cout << setw (12) << last_was_cb;
-    cout << setw (FW) << vector_to_string (write_pos);
-    cout << setw (FW) << vector_to_string (real_size);
-    cout << setw (FW) << vector_to_string (array.dims());
+    cout << setw (14) << vector_to_string (write_pos);
+    cout << setw (14) << vector_to_string (real_size);
+    cout << setw (18) << vector_to_string (DynArray.dims());
+    cout << setw (18) << vector_to_string (DynCell.dims());
     cout << endl;
 
     header = 0;
   }
 #endif
 
+  void resize (dim_vector d)
+    {
+      //cout << "resize called " << vector_to_string(d) << endl;
+      if (array_is_numeric)
+        DynArray.resize (d);
+      else
+        DynCell.resize (d);
+    }
 
+  dim_vector dims ()
+    {
+      return (array_is_numeric)? DynArray.dims ()
+                               : DynCell.dims ();
+    }
+
+  // checks if the array needs to be resized
+  // in the current write_pos dimension
+  void resize_before_append ()
+    {
+      //cout << "resize_before_append called" << endl;
+      dim_vector s = dims ();
+      
+      //cout << "s(0)=" << s(0)  << " s(1)=" << s(1) << endl;
+      for (int k = 0; k < s.ndims(); ++k)
+        if (write_pos(k) > s(k) - 1)
+          {
+            s(k) = ceil (s(k) * GROWTH_FACTOR);
+            resize (s);
+          }
+    }
+         
 public:
 
   dynContainer ()
-    : real_size (0, 0),
-      array (dim_vector (INITIAL_ARRAY_SIZE, INITIAL_ARRAY_SIZE), lo_ieee_na_value ()),
+    : DynArray (dim_vector (INITIAL_ARRAY_SIZE, INITIAL_ARRAY_SIZE), lo_ieee_na_value ()),
+      DynCell (dim_vector (INITIAL_ARRAY_SIZE, INITIAL_ARRAY_SIZE)),
+      real_size (0, 0),
       write_pos (dim_vector (2, 1), 0),
       depth (0),
+      array_is_numeric (true),
       last_was_cb (false)
   {
 #ifdef DEBUG
@@ -115,12 +157,11 @@ public:
             real_size.resize (new_dims);
 
             // add new dimension to array
-            dim_vector s = array.dims ();
+            dim_vector s = dims ();
             s.resize (new_dims);
             s(new_dims - 1) = INITIAL_ARRAY_SIZE;
-            array.resize (s);
+            resize (s);
           }
-
         write_pos (0) = 0;
       }
 
@@ -146,15 +187,7 @@ public:
 
     if (depth == 0)
       {
-        array.resize (real_size);
-
-        // Die ersten 2 Dimensionen drehen
-        Array<int> p(dim_vector(real_size.ndims(), 1));
-        for (int k = 2; k < real_size.ndims(); ++k)
-          p(k) = k;
-        p(0) = 1;
-        p(1) = 0;
-        array = array.permute (p);
+        resize (real_size);
       }
 #ifdef DEBUG
     print_state ("]");
@@ -162,54 +195,65 @@ public:
   }
 
   // insert value at current position
-  void value (double v)
-  {
-    // check if the array needs to be resized
-    dim_vector s = array.dims ();
-    //cout << "s(0)=" << s(0)  << " s(1)=" << s(1) << endl;
-    for (int k = 0; k < s.ndims(); ++k)
-      if (write_pos(k) > s(k) - 1)
+  void append_value (octave_value v)
+    {
+      //print_state ("append");
+      if (! ISNUMERIC(v))
         {
-          s(k) = ceil (s(k) * GROWTH_FACTOR);
-          array.resize (s);
+          if (array_is_numeric)
+            {
+              // copy NDArray to Cell
+              array_is_numeric = false;
+              
+              //cout << "Copy NDArray -> Cell" << endl;
+              
+              resize (DynArray.dims ());
+              octave_idx_type nel = DynArray.numel ();
+              //cout << "nel = " << nel << endl;
+              for (octave_idx_type i = 0; i < nel; i++)
+                DynCell(i) = DynArray(i);
+
+              //cout << "copy done" << endl;
+                    
+              // FIXME: clear/resize DynArray
+              // to free memory
+            }
         }
-    array (write_pos) = v;
-
-    write_pos(0)++;
-
 #ifdef DEBUG
-    char buf[10];
-    snprintf (buf, 10, "%.1f", v);
-    print_state (buf);
+       if (v.is_string ())
+         print_state (v.string_value ());
+       else if (ISNUMERIC(v))
+         print_state (v.double_value ());
 #endif
-  }
 
-  base_container const& get_array ()
+      resize_before_append ();
+      
+      if (array_is_numeric)
+        DynArray(write_pos) = v.double_value ();
+      else
+        DynCell(write_pos) = v;
+      
+      write_pos(0)++;
+  }
+  
+  octave_value get_array ()
   {
-    return array;
+    // Die ersten 2 Dimensionen drehen
+    Array<int> p(dim_vector(real_size.ndims(), 1));
+    for (int k = 2; k < real_size.ndims(); ++k)
+      p(k) = k;
+     p(0) = 1;
+     p(1) = 0;
+        
+    if (array_is_numeric)
+      return DynArray.permute (p);
+    else
+      return DynCell.permute (p);
   }
   
   int get_depth ()
   {
     return depth;
   }
-
-  void operator = (dynContainer<NDArray> &o)
-  {
-      real_size = o.real_size;
-      write_pos = o.write_pos;
-      depth = o.depth;
-      last_was_cb = o.last_was_cb;
-      
-      cout << "copy NDArray..." << endl;
-      cout << "real_size " << real_size(0) << " " << real_size(1) << endl;
-      cout << "write_pos " << write_pos(0) << " " << write_pos(1) << endl;
-      cout << "depth = " << depth << endl;
-      
-      array.resize (real_size);
-      octave_idx_type nel = o.array.numel ();
-      cout << "nel = " << nel << endl;
-      for (octave_idx_type i = 0; i < nel; i++)
-        array.xelem (i) = o.array(i);
-  }
 };
+

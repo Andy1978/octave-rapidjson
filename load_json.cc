@@ -21,28 +21,28 @@
 #include <octave/Cell.h>
 
 #include <vector>
+#include "dynContainer.h"
 
 #include "rapidjson/document.h"
 #include "rapidjson/reader.h"
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/error/en.h"
 
-#define INITIAL_ARRAY_SIZE 64
 //#define DEBUG
 
 #ifdef DEBUG
-#define DBG_MSG2(d, a, b) DBS(d);\
-                   std::cout << __FILE__ << ":"\
-                             << __FUNCTION__ << ":"\
-                             << __LINE__ << " "\
-                             << a << " "\
+#include <iomanip>
+#define DBG_MSG2(d, a, b) for (int __k__ = 0; __k__ < d; ++__k__) std::cout << "-";\
+                   std::cout << std::setw (15 - d) << std::left\
+                             << __FILE__ << ":"\
+                             << std::setw (14) << __FUNCTION__ << ":"\
+                             << std::setw (4) << __LINE__ << " ";\
+                   std::cout << a << " "\
                              << b << std::endl
 #define DBG_MSG1(d, a) DBG_MSG2(d, a, "")
-#define DBS(d) for (int __k__ = 0; __k__ < d; ++__k__) std::cout << "-";
 #else
 #define DBG_MSG2(d, a, b)
 #define DBG_MSG1(d, a)
-#define DBS(d)
 #endif
 
 
@@ -52,8 +52,8 @@ public:
 
   parse_state (int depth)
     : _depth (depth),
-      is_array (0),
-      array (dim_vector (1, INITIAL_ARRAY_SIZE))
+      is_json_array (0),
+      array (NULL)
   {
     DBG_MSG2(_depth, "constructor", _depth);
   }
@@ -61,31 +61,18 @@ public:
   ~parse_state ()
   {
     DBG_MSG1(_depth, "destructor");
+    delete (array);
   }
 
   octave_scalar_map result;
 
   void push_back (octave_value v)
   {
-    DBG_MSG1(_depth, "");
+    DBG_MSG2(_depth, "is_json_array=", is_json_array);
 
-    if (is_array)
+    if (is_json_array)
       {
-#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION >0 || OCTAVE_MAJOR_VERSION > 4
-        if (! v.isnumeric ())
-#else
-        if (! v.is_numeric_type ())
-#endif
-          array_is_numeric = false;
-
-        assert (array.rows () == 1);
-        unsigned c = array.columns ();
-        DBG_MSG2(_depth, "array.columns () = ", c);
-
-        if (array_items == c)
-          array.resize (dim_vector (1, 2 * c));
-
-        array(0, array_items++) = v;
+        array->append_value (v);
       }
     else
       {
@@ -99,53 +86,49 @@ public:
     _key = str;
   }
 
-  void start_object ()
-  {
-    DBG_MSG1(_depth, "");
-    array_is_numeric = false;
-  }
+  //~ void start_object ()
+  //~ {
+    //~ DBG_MSG1(_depth, "");
+  //~ }
 
   void start_array ()
   {
     DBG_MSG1(_depth, "");
-    is_array = true;
-    array_is_numeric = true;
-    array_items = 0;
+    is_json_array = true;
+    //array_items = 0;
+    
+    if (! array)
+      array = new dynContainer;
+    array->ob ();
   }
 
   void end_array ()
   {
-    DBG_MSG2(_depth, "array_items = ", array_items);
+    DBG_MSG1(_depth, "");
+    //DBG_MSG2(_depth, "array_items = ", array_items);
     //assert (elementCount == ps.back().array_items);
-    is_array = false;
+    is_json_array = false;
 
-    // return Matrix if the array didn't contains string
-    if (array_is_numeric)
+    array->cb ();
+
+    if (array->get_depth () == 0)
       {
-        DBG_MSG1(_depth, "array_is_numeric");
-        RowVector tmp(array_items);
-        for (unsigned k = 0; k < array_items; ++k)
-          tmp (k) = array(k).double_value();
-        result.contents (_key) = tmp;
-      }
-    else
-      {
-        // FIMXE: looks like there is no "extract" for Cells?
-        array.resize (dim_vector (array.rows(), array_items));
-        result.contents (_key) = array;
+        result.contents (_key) = array->get_array ();
+        delete (array);
+        array = NULL;
       }
   }
 
 private:
-  int _depth;
+  int _depth;             // only for debug output
+  int array_depth;
   std::string _key;
-  bool is_array;
-  bool array_is_numeric;
-  unsigned array_items;
-  Cell array;
+  bool is_json_array;     // we are between start_array() and end_array()
+
+  dynContainer *array;
 };
 
-class MyHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, MyHandler>
+class JSON_Handler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, JSON_Handler>
 {
 public:
 
@@ -153,8 +136,6 @@ public:
   std::vector <parse_state*> ps;
 
 public:
-
-  //MyHandler ()
 
   bool Null()
   {
@@ -190,6 +171,7 @@ public:
     ps.back()->push_back (octave_int64 (i));
     return true;
   }
+
   bool Uint64(uint64_t u)
   {
     DBG_MSG1 (0, u);
@@ -216,11 +198,12 @@ public:
   bool StartObject()
   {
     DBG_MSG1 (0, "");
-    int d = ps.size() + 1;
-    ps.push_back(new parse_state(d));
-    ps.back()->start_object ();
+    int d = ps.size () + 1;
+    ps.push_back (new parse_state(d));
+    //ps.back ()->start_object ();
     return true;
   }
+
   bool Key(const char* str, rapidjson::SizeType length, bool copy)
   {
     (void) copy;
@@ -230,6 +213,7 @@ public:
     ps.back()->key(str);
     return true;
   }
+
   bool EndObject(rapidjson::SizeType memberCount)
   {
     (void) memberCount;
@@ -246,8 +230,17 @@ public:
 
     return true;
   }
+
   bool StartArray()
   {
+    // Sollte JSON mit '[' anfangen, z.B.
+    // '[{"a":5}]'
+    // oder
+    // '[2,3]'
+    
+    //if (! ps.size())
+    //  ps.push_back (new parse_state(ps.size () + 1));
+    
     ps.back()->start_array ();
     return true;
   }
@@ -266,24 +259,23 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
   if (args.length () != 1)
     print_usage ();
 
-  MyHandler handler;
+  JSON_Handler handler;
   rapidjson::Reader reader;
   std::string json = args(0).string_value ();
   DBG_MSG2(0, "json = ", json);
 
   rapidjson::StringStream ss(json.c_str());
   rapidjson::ParseResult ok = reader.Parse(ss, handler);
+
+  //rapidjson::Document d;
+  //rapidjson::ParseResult ok = d.ParseStream(ss);
+  
   if (! ok)
     {
       error ("JSON parse error: '%s' at offset %u",
-             GetParseError_En (ok.Code()),
+             rapidjson::GetParseError_En (ok.Code()),
              ok.Offset());
     }
-  //~ Matrix a(dim_vector(3,2));
-  //~ for (int k=0; k<a.numel();++k)
-  //~ a.fortran_vec()[k] = k;
-  //~ std::cout << a << std::endl;
-  //~ std::cout << a.extract(0,1,2,1) << std::endl;
 
   return ovl (handler.result);
 }
@@ -302,9 +294,16 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
 %! assert (r.a, [1 2 3 4])
 %! assert (r.b, {"foo", 4})
 
-%!xtest
-%! disp ("Matrix not yet supported")
+%!test
 %! json = '{ "a": [[1,2],[3,4]]}';
 %! r =load_json (json);
 %! assert (r.a, [1 2; 3 4]);
+
+%!test
+%! json = '{ "a" : [[[1,2],[3,4]],[[5,6],[7,8.1]]], "b" : [10,20], "c": [100,200] }';
+%! r = load_json (json);
+%! assert (r.a, cat (3, [1 2; 3 4], [5 6; 7 8.1]));
+%! assert (r.b, [10 20]);
+%! assert (r.c, [100 200]);
+
 */

@@ -1,21 +1,21 @@
 addpath ("~/src/jsonlab/");
 
 ## works
-#json = ' { "hello" : "world", "t" : true , "f" : false, "n": null, "i":-123, "u":456, "pi": 3.1416, "li": -765432986, "a":[1, 2, 3, 4], "b": ["foo", 4] } ';
-#json = '{ "a" : 5, "b": {"c":4, "d":5} } ';
 
-json = '{ "b" : [[1,2],[3,4]] } ';
+json = ' { "hello" : "world", "t" : true , "f" : false, "n": null, "i":-123, "u":456, "pi": 3.1416, "li": -765432986, "a":[1, 2, 3, 4], "b": ["foo", 4] } ';
+compare_with_jsonlab (json);
 
-tic
-a = load_json2(json)
-toc
+# rapidjson returns Cell for 3 dimensional matrix. Is this a bug?
+json = '{ "a" : [[[1,2],[3,4]],[[5,6],[7,8]]], "b" : [10,20], "c": [100,200] }';
+compare_with_jsonlab (json, 1);
 
-tic
-b = loadjson(json);
-toc
+json = '{ "a" : 5, "b": {"c":4, "d":5} } ';
+compare_with_jsonlab (json);
 
-assert (a, b)
-#structfun (@typeinfo, a, "uniformOutput", false)
-#structfun (@typeinfo, b, "uniformOutput", false)
+json = '{ "b" : [[1,2],[3,4],[5,6]] } ';
+compare_with_jsonlab (json);
 
+# Not numeric entry. I think this implementation acts better here
+json = '{ "b" : [[1,2],[5,"bar"]]}';
+compare_with_jsonlab (json, 1);
 

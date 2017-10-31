@@ -1,11 +1,21 @@
 addpath ("~/src/jsonlab/");
 
-fn = "Plan1.json_1495619229.json"
-tic
-a = load_json(fileread(fn));
-toc
-tic
-b = loadjson(fn);
-toc
+#json = urlread ("https://next.json-generator.com/api/json/get/4yozvx-0m");
 
-assert (a, b)
+if (exist ("tmp", "file"))
+  json = fileread ("tmp");
+else
+  json = urlread ("https://next.json-generator.com/api/json/get/4kpTYx-A7");
+  save ("tmp", "json");
+endif
+
+addpath ("~/src/jsonlab/");
+
+a = load_json(json);
+
+#b = loadjson(json);
+#assert (a, b)
+    
+
+
+
