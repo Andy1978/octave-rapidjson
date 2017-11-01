@@ -90,7 +90,7 @@ public:
   {
     DBG_MSG1(_depth, "");
     is_json_array = true;
-    
+
     if (! array)
       array = new dynContainer;
     array->ob ();
@@ -133,7 +133,7 @@ public:
     ps.push_back (new parse_state(0));
     ps.back()->key("root");
   }
-  
+
   ~JSON_Handler ()
   {
     DBG_MSG1 (0, "destructor");
@@ -149,13 +149,13 @@ public:
     int n = ps.size ();
     if (n != 1)
       warning ("result () called too early, parsing is still in progress");
-    
+
     //return ps[0]->result; // FIXME: eigentlich wollte ich hier nur "root" zurück geben
-                          //.contents ("root").scalar_map_value();
-    
+    //.contents ("root").scalar_map_value();
+
     octave_value tmp = ps[0]->result.contents ("root");
     return tmp;
-    
+
   }
 
   bool Null()
@@ -257,10 +257,10 @@ public:
     // '[{"a":5}]'
     // oder
     // '[2,3]'
-    
+
     //if (! ps.size())
     //  ps.push_back (new parse_state(ps.size () + 1));
-    
+
     ps.back()->start_array ();
     return true;
   }
@@ -289,7 +289,7 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
 
   //rapidjson::Document d;
   //rapidjson::ParseResult ok = d.ParseStream(ss);
-  
+
   if (! ok)
     {
       error ("JSON parse error: '%s' at offset %u",
