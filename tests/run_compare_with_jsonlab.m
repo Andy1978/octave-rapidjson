@@ -1,6 +1,5 @@
+addpath ("../")
 addpath ("~/src/jsonlab/");
-
-## works
 
 json = ' { "hello" : "world", "t" : true , "f" : false, "n": null, "i":-123, "u":456, "pi": 3.1416, "li": -765432986, "a":[1, 2, 3, 4], "b": ["foo", 4] } ';
 compare_with_jsonlab (json);
@@ -19,3 +18,8 @@ compare_with_jsonlab (json);
 json = '{ "b" : [[1,2],[5,"bar"]]}';
 compare_with_jsonlab (json, 1);
 
+json = '[3,4,5]';
+compare_with_jsonlab (json, 0);
+
+json = fileread ("medium1.json");
+compare_with_jsonlab (json, 0, 1);
