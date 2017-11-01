@@ -55,12 +55,12 @@ public:
       is_json_array (0),
       array (NULL)
   {
-    DBG_MSG2(_depth, "constructor", _depth);
+    DBG_MSG2(_depth, "constructor, _depth = ", _depth);
   }
 
   ~parse_state ()
   {
-    DBG_MSG1(_depth, "destructor");
+    DBG_MSG2(_depth, "destructor, _depth = ", _depth);
     delete (array);
   }
 
@@ -86,16 +86,10 @@ public:
     _key = str;
   }
 
-  //~ void start_object ()
-  //~ {
-    //~ DBG_MSG1(_depth, "");
-  //~ }
-
   void start_array ()
   {
     DBG_MSG1(_depth, "");
     is_json_array = true;
-    //array_items = 0;
     
     if (! array)
       array = new dynContainer;
@@ -105,8 +99,6 @@ public:
   void end_array ()
   {
     DBG_MSG1(_depth, "");
-    //DBG_MSG2(_depth, "array_items = ", array_items);
-    //assert (elementCount == ps.back().array_items);
     is_json_array = false;
 
     array->cb ();
@@ -121,7 +113,6 @@ public:
 
 private:
   int _depth;             // only for debug output
-  int array_depth;
   std::string _key;
   bool is_json_array;     // we are between start_array() and end_array()
 
@@ -130,12 +121,42 @@ private:
 
 class JSON_Handler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, JSON_Handler>
 {
-public:
+private:
 
-  octave_scalar_map result;
   std::vector <parse_state*> ps;
 
 public:
+
+  JSON_Handler ()
+  {
+    DBG_MSG1 (0, "constructor");
+    ps.push_back (new parse_state(0));
+    ps.back()->key("root");
+  }
+  
+  ~JSON_Handler ()
+  {
+    DBG_MSG1 (0, "destructor");
+    if (ps.size () != 1)
+      error ("JSON_Handler destructor, ps.size () != 1, this shouldn't happen");
+
+    for (unsigned k = 0; k < ps.size(); ++k)
+      delete (ps[k]);
+  }
+
+  octave_value result ()
+  {
+    int n = ps.size ();
+    if (n != 1)
+      warning ("result () called too early, parsing is still in progress");
+    
+    //return ps[0]->result; // FIXME: eigentlich wollte ich hier nur "root" zurück geben
+                          //.contents ("root").scalar_map_value();
+    
+    octave_value tmp = ps[0]->result.contents ("root");
+    return tmp;
+    
+  }
 
   bool Null()
   {
@@ -200,7 +221,6 @@ public:
     DBG_MSG1 (0, "");
     int d = ps.size () + 1;
     ps.push_back (new parse_state(d));
-    //ps.back ()->start_object ();
     return true;
   }
 
@@ -222,10 +242,10 @@ public:
 
     if (n > 1)
       ps[n-2]->push_back (ps[n-1]->result);
-    else
-      result = ps[n-1]->result;
+    //else
+    //  result = ps[n-1]->result;
 
-    delete ps.back ();
+    delete ps.back ();  // this IS ps[n-1]
     ps.pop_back ();
 
     return true;
@@ -277,7 +297,7 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
              ok.Offset());
     }
 
-  return ovl (handler.result);
+  return ovl (handler.result ());
 }
 
 /*
@@ -296,14 +316,24 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
 
 %!test
 %! json = '{ "a": [[1,2],[3,4]]}';
-%! r =load_json (json);
-%! assert (r.a, [1 2; 3 4]);
+%! r = load_json (json);
+%! assert (r.a, [1 2; 3 4], eps);
 
 %!test
 %! json = '{ "a" : [[[1,2],[3,4]],[[5,6],[7,8.1]]], "b" : [10,20], "c": [100,200] }';
 %! r = load_json (json);
-%! assert (r.a, cat (3, [1 2; 3 4], [5 6; 7 8.1]));
-%! assert (r.b, [10 20]);
-%! assert (r.c, [100 200]);
+%! assert (r.a, cat (3, [1 2; 3 4], [5 6; 7 8.1]), eps);
+%! assert (r.b, [10 20], eps);
+%! assert (r.c, [100 200], eps);
+
+%!test
+%! json = '[2,3,4]';
+%! r = load_json (json);
+%! assert (r, 2:4, eps)
+
+%!test
+%! json = '[[2.1],[3.4],[1.6]]';
+%! r = load_json (json);
+%! assert (r, [2.1, 3.4, 1.6].', eps)
 
 */

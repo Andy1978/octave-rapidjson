@@ -2,7 +2,7 @@
 
 CXXFLAGS = `pkg-config --cflags RapidJSON`
 
-TARGETS= load_json.oct test_dynContainer
+TARGETS= load_json.oct
 
 all: $(TARGETS)
 
@@ -15,6 +15,10 @@ test_dynContainer: test_dynContainer.cc
 style:
 	astyle --style=gnu -s2 -n *.cc
 
+check: load_json.oct
+	octave --no-gui --eval "test load_json"
+
 clean:
 	rm -f *.o *.oct octave-workspace
 	rm -f $(TARGETS)
+	$(MAKE) -C tests clean
