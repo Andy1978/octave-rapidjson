@@ -108,7 +108,7 @@ private:
       dim_vector s = dims ();
       
       //cout << "s(0)=" << s(0)  << " s(1)=" << s(1) << endl;
-      for (int k = 0; k < s.ndims(); ++k)
+      for (int k = 0; k < s.length(); ++k)
         if (write_pos(k) > s(k) - 1)
           {
             s(k) = ceil (s(k) * GROWTH_FACTOR);
@@ -240,8 +240,8 @@ public:
   octave_value get_array ()
   {
     // Die ersten 2 Dimensionen drehen
-    Array<int> p(dim_vector(real_size.ndims(), 1));
-    for (int k = 2; k < real_size.ndims(); ++k)
+    Array<int> p(dim_vector(real_size.length(), 1));
+    for (int k = 2; k < real_size.length(); ++k)
       p(k) = k;
      p(0) = 1;
      p(1) = 0;
