@@ -8,7 +8,8 @@
 
 //#define DEBUG
 
-#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION > 0 || OCTAVE_MAJOR_VERSION > 4
+//is_numeric_type was deprecated in 4.3.0, see libinterp/octave-value/ov.h
+#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION > 2 || OCTAVE_MAJOR_VERSION > 4
   #define ISNUMERIC(v) v.isnumeric ()
 #else
   #define ISNUMERIC(v) v.is_numeric_type ()
