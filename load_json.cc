@@ -16,35 +16,14 @@
 // along with this program; if not, see
 // <http://www.gnu.org/licenses/>.
 
-#include <octave/oct.h>
-#include <octave/oct-map.h>
-#include <octave/Cell.h>
-
 #include <vector>
 #include "dynContainer.h"
 
-#include "rapidjson/document.h"
 #include "rapidjson/reader.h"
-#include "rapidjson/filereadstream.h"
 #include "rapidjson/error/en.h"
 
 //#define DEBUG
-
-#ifdef DEBUG
-#include <iomanip>
-#define DBG_MSG2(d, a, b) for (int __k__ = 0; __k__ < d; ++__k__) std::cout << "-";\
-                   std::cout << std::setw (15 - d) << std::left\
-                             << __FILE__ << ":"\
-                             << std::setw (14) << __FUNCTION__ << ":"\
-                             << std::setw (4) << __LINE__ << " ";\
-                   std::cout << a << " "\
-                             << b << std::endl
-#define DBG_MSG1(d, a) DBG_MSG2(d, a, "")
-#else
-#define DBG_MSG2(d, a, b)
-#define DBG_MSG1(d, a)
-#endif
-
+#include "debug.h"
 
 class parse_state
 {
