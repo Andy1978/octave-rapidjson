@@ -137,9 +137,6 @@ public:
   ~JSON_Handler ()
   {
     DBG_MSG1 (0, "destructor");
-    if (ps.size () != 1)
-      error ("JSON_Handler destructor, ps.size () != 1, this shouldn't happen");
-
     for (unsigned k = 0; k < ps.size(); ++k)
       delete (ps[k]);
   }
@@ -292,6 +289,18 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
 
   if (! ok)
     {
+      // show substring with error
+#define HALF_DBG_OUT 10
+      int left = HALF_DBG_OUT;
+      if (int(ok.Offset()) - left < 0)
+        left = ok.Offset();
+
+      octave_stdout << "JSON Debug:" << json.substr (ok.Offset() - left, left + HALF_DBG_OUT + 1) << endl;
+      octave_stdout << "JSON Debug:";
+      for (int k = 0; k < left; ++k)
+        octave_stdout << " ";
+      octave_stdout << "^" << endl;;
+
       error ("JSON parse error: '%s' at offset %u",
              rapidjson::GetParseError_En (ok.Code()),
              ok.Offset());
@@ -335,5 +344,8 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
 %! json = '[[2.1],[3.4],[1.6]]';
 %! r = load_json (json);
 %! assert (r, [2.1, 3.4, 1.6].', eps)
+
+%!error <'Invalid value.' at offset 5> load_json ('[1,2,,3]');
+%!error <'Missing a colon after a name of object member.' at offset 5> load_json ('{"a" 5}');
 
 */
