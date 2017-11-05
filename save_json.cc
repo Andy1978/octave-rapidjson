@@ -133,8 +133,7 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
         //~ }
       
       // convert to matrix
-      octave_stdout << r.matrix_value() << std::endl;
-      
+      save_element (writer, r.matrix_value());
     }
   else if (tc.is_real_scalar ())
     {
@@ -257,9 +256,8 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
     
     }
   else
-    error ("WTF???");
+    error ("not yet implemented");
   
-
   octave_stdout << "-----------------------------------------" << std::endl;  
   
   return true;
