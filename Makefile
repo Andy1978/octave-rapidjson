@@ -9,9 +9,6 @@ all: $(TARGETS)
 load_json.oct: load_json.cc
 	mkoctfile -Wall -Wextra $(CXXFLAGS) $<
 
-save_json.oct: save_json.cc
-	mkoctfile -Wall -Wextra $(CXXFLAGS) $<
-
 test_dynContainer: test_dynContainer.cc
 	mkoctfile -Wall -Wextra $(CXXFLAGS) --link-stand-alone $< -o $@
 
