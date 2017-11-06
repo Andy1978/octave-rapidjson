@@ -2,7 +2,7 @@
 
 CXXFLAGS = `pkg-config --cflags RapidJSON`
 
-TARGETS= load_json.oct save_json.oct
+TARGETS= load_json.oct
 
 all: $(TARGETS)
 
