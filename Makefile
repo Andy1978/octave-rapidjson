@@ -2,7 +2,7 @@
 
 CXXFLAGS = `pkg-config --cflags RapidJSON`
 
-TARGETS= load_json.oct save_json.oct
+TARGETS= load_json.oct save_json.oct doit
 
 all: $(TARGETS)
 
@@ -14,6 +14,9 @@ save_json.oct: save_json.cc
 
 test_dynContainer: test_dynContainer.cc
 	mkoctfile -Wall -Wextra $(CXXFLAGS) --link-stand-alone $< -o $@
+
+doit: doit.cc
+	mkoctfile -Wall -Wextra --link-stand-alone $< -o $@
 
 style:
 	astyle --style=gnu -s2 -n *.cc

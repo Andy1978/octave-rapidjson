@@ -156,22 +156,38 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
       octave_stdout << "numel=" << m.numel() << std::endl;
       octave_stdout << "ndims=" << m.ndims() << std::endl;
       
-      // Die ersten 2 Dimensionen drehen
-      Array<int> p(dim_vector(m.ndims(), 1));
-      for (int k = 2; k < m.ndims(); ++k)
-        p(k) = k;
-       p(0) = 1;
-       p(1) = 0;
-        
-      m.permute (p);
+      // swap first two dimensions, see also
+      // https://stackoverflow.com/questions/45855978/agreement-how-a-matrix-2d-is-stored-as-json
+      {
+        Array<int> p(dim_vector(m.ndims(), 1));
+        for (int k = 2; k < m.ndims(); ++k)
+          p(k) = k;
+        p(0) = 1;
+        p(1) = 0;
+        m = m.permute (p);
+      }
       
       dim_vector d = m.dims ();
+
+      for (int k = 0; k < d.ndims(); ++k)
+        // Achtung, hier schon gedreht
+        octave_stdout << "d(" << k << ")=" << d(k) << std::endl;
 
       // Wieviel öffnende Klammern?
       for (int k = 0; k < d.length(); ++k)
         writer.StartArray();
       
       const double *pd = m.fortran_vec ();
+      
+      
+      
+      // Versuch eines Index
+      dim_vector ind(2,3,4);
+
+      ind= ind.as_column();
+
+      for (int k = 0; k < ind.length(); ++k)
+        octave_stdout << "ind(" << k << ")=" << ind(k) << std::endl;
       
       for (int k=0; k<m.numel(); ++k)
         {
