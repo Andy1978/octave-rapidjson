@@ -4,19 +4,22 @@ CXXFLAGS = `pkg-config --cflags RapidJSON`
 
 TARGETS= load_json.oct save_json.oct doit
 
+MKOCT= mkoctfile-4.2.1
+#MKOCT= mkoctfile-4.3.0+
+
 all: $(TARGETS)
 
 load_json.oct: load_json.cc
-	mkoctfile -Wall -Wextra $(CXXFLAGS) $<
+	$(MKOCT) -Wall -Wextra $(CXXFLAGS) $<
 
 save_json.oct: save_json.cc
-	mkoctfile -Wall -Wextra $(CXXFLAGS) $<
+	$(MKOCT) -Wall -Wextra $(CXXFLAGS) $<
 
 test_dynContainer: test_dynContainer.cc
-	mkoctfile -Wall -Wextra $(CXXFLAGS) --link-stand-alone $< -o $@
+	$(MKOCT) -Wall -Wextra $(CXXFLAGS) --link-stand-alone $< -o $@
 
 doit: doit.cc
-	mkoctfile -Wall -Wextra --link-stand-alone $< -o $@
+	$(MKOCT) -Wall -Wextra --link-stand-alone $< -o $@
 
 style:
 	astyle --style=gnu -s2 -n *.cc

@@ -84,16 +84,16 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
   //int32_t nr = tc.rows ();
   //int32_t nc = tc.columns ();
 
-  if (tc.issparse ())
+  if (tc.is_sparse_type ())
     {
-      octave_stdout << "issparse, nnz = " <<  tc.nnz () << ", iscomplex = " << tc.iscomplex () << std::endl;
+      octave_stdout << "issparse, nnz = " <<  tc.nnz () << ", iscomplex = " << tc.is_complex_type () << std::endl;
       error ("JSON can't handle sparse matrix, convert to full matrix first (using 'full')");
     }
   else if (tc.is_inline_function ())
     {
       error ("Can't store inline function into JSON");
     }
-  else if (tc.isobject ())
+  else if (tc.is_object ())
     {
       error ("Can't store object into JSON");
     }
@@ -106,7 +106,7 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
       charMatrix chm = tc.char_matrix_value ();
 
       octave_idx_type nrow = chm.rows ();
-      octave_idx_type ncol = chm.cols ();
+      //octave_idx_type ncol = chm.cols ();
 
       //OCTAVE_LOCAL_BUFFER (double, buf, ncol*nrow);
 
@@ -153,8 +153,8 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
       octave_stdout << "is_real_matrix()" << std::endl;
       NDArray m = tc.array_value ();
 
-      octave_stdout << "numel=" << m.numel() << std::endl;
-      octave_stdout << "ndims=" << m.ndims() << std::endl;
+      //octave_stdout << "numel=" << m.numel() << std::endl;
+      //octave_stdout << "ndims=" << m.ndims() << std::endl;
       
       // swap first two dimensions, see also
       // https://stackoverflow.com/questions/45855978/agreement-how-a-matrix-2d-is-stored-as-json
@@ -169,37 +169,37 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
       
       dim_vector d = m.dims ();
 
-      for (int k = 0; k < d.ndims(); ++k)
-        // Achtung, hier schon gedreht
-        octave_stdout << "d(" << k << ")=" << d(k) << std::endl;
+      // Achtung, hier schon gedreht
+      //octave_stdout << "d = " << d.str () << std::endl;
 
-      // Wieviel öffnende Klammern?
-      for (int k = 0; k < d.length(); ++k)
-        writer.StartArray();
-      
       const double *pd = m.fortran_vec ();
       
-      
-      
-      // Versuch eines Index
-      dim_vector ind(2,3,4);
-
-      ind= ind.as_column();
-
-      for (int k = 0; k < ind.length(); ++k)
-        octave_stdout << "ind(" << k << ")=" << ind(k) << std::endl;
-      
-      for (int k=0; k<m.numel(); ++k)
-        {
-          octave_stdout << pd[k] << endl;
-           writer.Double (pd[k]);
-          
-          // hier müsste man den index ausrechnen und dann EndArray/StartArray einfügen
-          
-        }
-      
+      // Wieviel öffnende Klammern?
       for (int k = 0; k < d.length(); ++k)
-        writer.EndArray();
+        //writer.StartArray();
+        cout << "[";
+      
+      octave_idx_type *idx = new octave_idx_type[d.ndims()];
+      std::fill_n (idx, d.ndims(), 0);
+      
+      for (int k = 0; k < m.numel(); ++k)
+        {
+          cout << pd[k] << " ";
+          //writer.Double (pd[k]);
+
+          int r = d.increment_index (idx, 0);
+
+          for (int i = 0; i < r; ++i)
+            //writer.EndArray();
+            cout << "]";
+
+          if (r > 0 && r != d.ndims ())
+            //writer.StartArray();
+            cout << "[";
+        
+        }
+  
+      delete [] idx;
 
     }
   else if (tc.is_complex_scalar ())
@@ -218,11 +218,11 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
       //~ m = ::imag (m_cmplx);
       //~ os.write (reinterpret_cast<const char *> (m.data ()), n_bytes);
     }
-  else if (tc.iscell ())
+  else if (tc.is_cell ())
     {
       Cell cell = tc.cell_value ();
     }
- else if (tc.isstruct ())
+ else if (tc.is_map ())
     {
       octave_map m = tc.map_value ();
 

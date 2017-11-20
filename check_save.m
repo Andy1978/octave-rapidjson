@@ -23,9 +23,9 @@ more off
 %~ b(3).c = 2.718
 %~ save_json(b)
 
-#a = reshape (1:6, 1,2,3)
+a = reshape (1:6, 1,2,3)
 
-a = reshape (1:6, 2,3)
+#a = reshape (1:6, 2,3)
 
 save_json (a)
 

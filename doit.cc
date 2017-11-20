@@ -16,18 +16,6 @@ ostream& operator << (ostream& os, const dim_vector &rhs)
 }
 
 
-dim_vector nsqueeze (dim_vector in)
-{
-  dim_vector new_dims = in;
-  new_dims.chop_all_singletons();
-
-  // preserve orientation if there is only one non-singleton dimension left
-  if (new_dims.ndims () == 2 && in.elem(0) == 1 && new_dims.elem(1) == 1)
-    return new_dims.as_row ();
-
-  return new_dims;
-}
-
 int
 main (void)
 {
@@ -42,37 +30,34 @@ main (void)
 
   //~ std::cout << a_matrix;
 
-  cout << nsqueeze (dim_vector (1,2,1,3)) << endl;
-  //~ dim_vector a (1,2,1);
-  //~ a.chop_all_singletons();
-  //~ cout << a << endl;
+  //~ dim_vector a (2,3,4,1);
+  //~ cout << a.redim (3) << endl;
   
   
-  
-  assert (dim_vector (0,0).squeeze () == dim_vector (0,0));
-  assert (dim_vector (0,1).squeeze () == dim_vector (0,1));
-  assert (dim_vector (1,1).squeeze () == dim_vector (1,1));
-  assert (dim_vector (2,1).squeeze () == dim_vector (2,1));
-  assert (dim_vector (1,2).squeeze () == dim_vector (1,2));
-  assert (dim_vector (1,2,1).squeeze () == dim_vector (1,2));
-  assert (dim_vector (1,2,1,3).squeeze () == dim_vector (2,3));
-  assert (dim_vector (2,1,3).squeeze () == dim_vector (2,3));
-  assert (dim_vector (1,1,3).squeeze () == dim_vector (1,3));
-  
+  dim_vector b (4,2,3);
+  octave_idx_type idx[] = {0, 0, 0};
 
-  assert (nsqueeze (dim_vector (0,0)) == dim_vector (0,0));
-  assert (nsqueeze (dim_vector (0,1)) == dim_vector (0,1));
-  assert (nsqueeze (dim_vector (1,1)) == dim_vector (1,1));
-  assert (nsqueeze (dim_vector (2,1)) == dim_vector (2,1));
-  assert (nsqueeze (dim_vector (1,2)) == dim_vector (1,2));
-  assert (nsqueeze (dim_vector (1,2,1)) == dim_vector (1,2));
-  assert (nsqueeze (dim_vector (1,2,1,3)) == dim_vector (2,3));
-  assert (nsqueeze (dim_vector (2,1,3)) == dim_vector (2,3));
-  assert (nsqueeze (dim_vector (1,1,3)) == dim_vector (1,3));
+  int r = b.ndims ();
+  for (int i = 0; i < r; ++i)
+    cout << "[";
+  do
+    {
+      r = b.increment_index (idx, 0);
+      cout << b.compute_index(idx) << ",";
 
+      for (int i = 0; i < r; ++i)
+        cout << "]";
+      if (r != b.ndims () && r > 0)
+        {
+          cout << ",";
+          for (int i = 0; i < r; ++i)
+            cout << "[";
+        }
 
-  //cout << d1 << endl;
-  //cout << d1.squeeze() << endl;
+      
+      //cout << "r = " << r << ": " << idx[0] << " " << idx[1] << " " << idx[2] << endl;
+
+    } while (r != b.ndims ());
 
   return 0;
 }
