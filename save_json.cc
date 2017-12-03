@@ -71,6 +71,20 @@ DEFUN_DLD (save_json, args,, "save_json (obj)")
 #if 0
   StringBuffer s;
   Writer<StringBuffer> writer(s);
+//  writer.StartObject();
+  writer.StartArray();
+  writer.StartObject();
+  writer.Key("hello");
+  writer.String("world");
+  writer.EndObject();
+  writer.EndArray();
+//  writer.EndObject();
+  return ovl (s.GetString());
+#endif
+
+#if 0
+  StringBuffer s;
+  Writer<StringBuffer> writer(s);
   writer.StartArray();
   writer.StartArray();
   for (unsigned i = 0; i < 4; i++)
@@ -80,16 +94,14 @@ DEFUN_DLD (save_json, args,, "save_json (obj)")
   return ovl (s.GetString());
 #endif
 
+
+#if 1
   StringBuffer s;
   Writer<StringBuffer> writer(s);
-
-//~ writer.StartObject();
-
   save_element (writer, args(0));
-
-//~ writer.EndObject();
-
   return ovl (s.GetString());
+#endif
+
 }
 
 bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
@@ -139,6 +151,10 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
     {
       octave_stdout << "is_range()" << std::endl;
       Range r = tc.range_value ();
+
+      // FIXME: Should a range be stored separately
+      // with base and inc?
+
       //~ double base = r.base ();
       //~ double inc = r.inc ();
       //~ octave_idx_type nel = r.numel ();
@@ -153,7 +169,7 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
     }
   else if (tc.is_real_scalar ())
     {
-      octave_stdout << "is_real_scalar()" << std::endl;
+      octave_stdout << "is_real_scalar() = " << tc.is_real_scalar() << std::endl;
       octave_stdout << "is_integer_type() = " << tc.is_integer_type() << std::endl;
       
       if (tc.is_integer_type ())
@@ -169,62 +185,66 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
       octave_stdout << "is_real_matrix()" << std::endl;
       NDArray m = tc.array_value ();
 
-      //octave_stdout << "numel=" << m.numel() << std::endl;
-      //octave_stdout << "ndims=" << m.ndims() << std::endl;
-      
-      // swap first two dimensions, see also
-      // https://stackoverflow.com/questions/45855978/agreement-how-a-matrix-2d-is-stored-as-json
-      {
-        Array<int> p(dim_vector(m.ndims(), 1));
-        for (int k = 2; k < m.ndims(); ++k)
-          p(k) = k;
-        p(0) = 1;
-        p(1) = 0;
-        m = m.permute (p);
-      }
-      
-      dim_vector d = m.dims ();
-
-      // Achtung, hier schon gedreht
-      //octave_stdout << "d = " << d.str () << std::endl;
-
-      const double *pd = m.fortran_vec ();
-      
-      // Wieviel öffnende Klammern?
-      for (int k = 0; k < d.length(); ++k)
+      if (m.is_empty())
+        writer.Null ();
+      else
         {
-          writer.StartArray();
-          //cout << "[" << endl;;
-        }
-      
-      octave_idx_type *idx = new octave_idx_type[d.ndims()];
-      std::fill_n (idx, d.ndims(), 0);
-      
-      for (int k = 0; k < m.numel(); ++k)
-        {
-          writer.Double (pd[k]);
-          //cout << "pd[k]=" << pd[k] << endl;
+          //octave_stdout << "numel=" << m.numel() << std::endl;
+          //octave_stdout << "ndims=" << m.ndims() << std::endl;
+          
+          // swap first two dimensions, see also
+          // https://stackoverflow.com/questions/45855978/agreement-how-a-matrix-2d-is-stored-as-json
+          {
+            Array<int> p(dim_vector(m.ndims(), 1));
+            for (int k = 2; k < m.ndims(); ++k)
+              p(k) = k;
+            p(0) = 1;
+            p(1) = 0;
+            m = m.permute (p);
+          }
+          
+          dim_vector d = m.dims ();
 
-          int r = d.increment_index (idx, 0);
-          //cout << "k=" << k << ", r=" << r << endl;
+          // Achtung, hier schon gedreht
+          //octave_stdout << "d = " << d.str () << std::endl;
 
-          for (int i = 0; i < r; ++i)
+          const double *pd = m.fortran_vec ();
+          
+          // Wieviel öffnende Klammern?
+          for (int k = 0; k < d.length(); ++k)
             {
-              writer.EndArray();
-              //cout << "]" << endl;
+              writer.StartArray();
+              //cout << "[" << endl;;
+            }
+          
+          octave_idx_type *idx = new octave_idx_type[d.ndims()];
+          std::fill_n (idx, d.ndims(), 0);
+          
+          for (int k = 0; k < m.numel(); ++k)
+            {
+              writer.Double (pd[k]);
+              //cout << "pd[k]=" << pd[k] << endl;
+
+              int r = d.increment_index (idx, 0);
+              //cout << "k=" << k << ", r=" << r << endl;
+
+              for (int i = 0; i < r; ++i)
+                {
+                  writer.EndArray();
+                  //cout << "]" << endl;
+                }
+
+              if (r > 0 && r != d.ndims ())
+                for (int i = 0; i < r; ++i)
+                  {
+                    writer.StartArray();
+                    //cout << "[" << endl;
+                  }
+
             }
 
-          if (r > 0 && r != d.ndims ())
-            for (int i = 0; i < r; ++i)
-              {
-                writer.StartArray();
-                //cout << "[" << endl;
-              }
-
-        }
-
-      delete [] idx;
-
+          delete [] idx;
+      } 
     }
   else if (tc.is_complex_scalar ())
     {
@@ -253,40 +273,57 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
       //char buf[64];
       //int32_t maxfieldnamelength = max_namelen + 1;
 
-      octave_idx_type nf = m.nfields ();
-      octave_stdout << "isstruct(), nf = " << nf << std::endl;
+      octave_idx_type nfields = m.nfields ();
+      octave_stdout << "isstruct(), nfields = " << nfields << std::endl;
 
       string_vector keys = m.keys ();
 
       // loop over keys
-      for (octave_idx_type i = 0; i < nf; i++)
+      for (octave_idx_type i = 0; i < nfields; i++)
         {
           std::string key = keys(i);
-           octave_stdout << "keys(" << i << ") = " << key << std::endl;
-
+          octave_stdout << "keys(" << i << ") = " << key << std::endl;
         }
 
-      octave_idx_type len = m.numel ();
-      octave_stdout << "len = " << len << std::endl;
+      octave_idx_type numel = m.numel ();
+      octave_stdout << "m.numel = " << numel << std::endl;
 
-      std::vector<const octave_value *> elts (nf);
-      for (octave_idx_type i = 0; i < nf; i++)
+      std::vector<const octave_value *> elts (nfields);
+      for (octave_idx_type i = 0; i < nfields; i++)
         elts[i] = m.contents (keys(i)).data ();
 
+      if (numel > 1)
+        writer.StartArray();
+
       // loop over the elements
-     for (octave_idx_type j = 0; j < len; j++)
+     for (octave_idx_type j = 0; j < numel; j++)
       {
+        writer.StartObject();
+        
         // Iterating over the list of keys will preserve the order
         // of the fields.
-        for (octave_idx_type i = 0; i < nf; i++)
+        for (octave_idx_type i = 0; i < nfields; i++)
           {
             //octave_stdout << elts[i][j] << std::endl;
             //octave_stdout << elts[i][j].double_value() << std::endl;
             octave_stdout << elts[i][j].class_name() << std::endl;
             octave_stdout << elts[i][j].matrix_value() << std::endl;
+            
+            writer.Key(keys(i).c_str ());
+            
+            //writer.Double(elts[i][j].double_value());
+            
+            // recursive call
+            save_element (writer, elts[i][j]);
+            
           }
+
+        writer.EndObject();
       }
-      
+
+      if (numel > 1)
+        writer.EndArray();
+
      // FIXME: soll man einen struct als
      // { "a": [1,2,3], "b" : [10,20,30]}
      // oder
@@ -305,18 +342,28 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
 
 /*
 %!test
-%! save_json (pi)
+%! a = [];
+%! assert (load_json (save_json (a)), a);
 
 %!test
-%! save_json ([2,3,4])
+%! a = pi;
+%! assert (load_json (save_json (a)), a);
 
 %!test
-%! save_json (rand(1,2,3))
+%! a = [2, 3, 4];
+%! assert (load_json (save_json (a)), a);
+
+%!test
+%! a = [2; 3; 4];
+%! assert (load_json (save_json (a)), a);
+
+%!test
+%! a = rand (4, 2, 3);
+%! assert (load_json (save_json (a)), a, eps);
 
 %!test
 %! b(1).a = 4;
 %! b(2).c = pi;
 %! b(3).c = 2.718;
-%! save_json (b)
-* 
+%! assert (load_json (save_json (b)), b, eps)
 */
