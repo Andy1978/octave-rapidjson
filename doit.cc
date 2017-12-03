@@ -25,15 +25,15 @@ main (void)
   //~ Matrix a_matrix = Matrix (n, n);
 
   //~ for (octave_idx_type i = 0; i < n; i++)
-    //~ for (octave_idx_type j = 0; j < n; j++)
-      //~ a_matrix(i,j) = (i + 1) * 10 + (j + 1);
+  //~ for (octave_idx_type j = 0; j < n; j++)
+  //~ a_matrix(i,j) = (i + 1) * 10 + (j + 1);
 
   //~ std::cout << a_matrix;
 
   //~ dim_vector a (2,3,4,1);
   //~ cout << a.redim (3) << endl;
-  
-  
+
+
   dim_vector b (4,2,3);
   octave_idx_type idx[] = {0, 0, 0};
 
@@ -54,10 +54,11 @@ main (void)
             cout << "[";
         }
 
-      
+
       //cout << "r = " << r << ": " << idx[0] << " " << idx[1] << " " << idx[2] << endl;
 
-    } while (r != b.ndims ());
+    }
+  while (r != b.ndims ());
 
   return 0;
 }

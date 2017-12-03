@@ -62,7 +62,7 @@ DEFUN_DLD (save_json, args,, "save_json (obj)")
   writer.Key("a");
   writer.StartArray();
   for (unsigned i = 0; i < 4; i++)
-      writer.Uint(i);
+    writer.Uint(i);
   writer.EndArray();
   writer.EndObject();
   return ovl (s.GetString());
@@ -88,7 +88,7 @@ DEFUN_DLD (save_json, args,, "save_json (obj)")
   writer.StartArray();
   writer.StartArray();
   for (unsigned i = 0; i < 4; i++)
-      writer.Uint(i);
+    writer.Uint(i);
   writer.EndArray();
   writer.EndArray();
   return ovl (s.GetString());
@@ -106,9 +106,9 @@ DEFUN_DLD (save_json, args,, "save_json (obj)")
 
 bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
 {
- std::string cname = tc.class_name ();
+  std::string cname = tc.class_name ();
   octave_stdout << "cname = " << cname << std::endl;
-  
+
   //int32_t nr = tc.rows ();
   //int32_t nc = tc.columns ();
 
@@ -159,11 +159,11 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
       //~ double inc = r.inc ();
       //~ octave_idx_type nel = r.numel ();
       //~ for (octave_idx_type i = 0; i < nel; i++)
-        //~ {
-          //~ double x = base + i * inc;
-          //~ os.write (reinterpret_cast<char *> (&x), 8);
-        //~ }
-      
+      //~ {
+      //~ double x = base + i * inc;
+      //~ os.write (reinterpret_cast<char *> (&x), 8);
+      //~ }
+
       // convert to matrix
       save_element (writer, r.matrix_value());
     }
@@ -171,7 +171,7 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
     {
       octave_stdout << "is_real_scalar() = " << tc.is_real_scalar() << std::endl;
       octave_stdout << "is_integer_type() = " << tc.is_integer_type() << std::endl;
-      
+
       if (tc.is_integer_type ())
         writer.Int(tc.int_value ());
       else if (tc.is_real_type ())
@@ -191,7 +191,7 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
         {
           //octave_stdout << "numel=" << m.numel() << std::endl;
           //octave_stdout << "ndims=" << m.ndims() << std::endl;
-          
+
           // swap first two dimensions, see also
           // https://stackoverflow.com/questions/45855978/agreement-how-a-matrix-2d-is-stored-as-json
           {
@@ -202,24 +202,24 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
             p(1) = 0;
             m = m.permute (p);
           }
-          
+
           dim_vector d = m.dims ();
 
           // Achtung, hier schon gedreht
           //octave_stdout << "d = " << d.str () << std::endl;
 
           const double *pd = m.fortran_vec ();
-          
+
           // Wieviel öffnende Klammern?
           for (int k = 0; k < d.length(); ++k)
             {
               writer.StartArray();
               //cout << "[" << endl;;
             }
-          
+
           octave_idx_type *idx = new octave_idx_type[d.ndims()];
           std::fill_n (idx, d.ndims(), 0);
-          
+
           for (int k = 0; k < m.numel(); ++k)
             {
               writer.Double (pd[k]);
@@ -244,7 +244,7 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
             }
 
           delete [] idx;
-      } 
+        }
     }
   else if (tc.is_complex_scalar ())
     {
@@ -266,7 +266,7 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
     {
       Cell cell = tc.cell_value ();
     }
- else if (tc.is_map ())
+  else if (tc.is_map ())
     {
       octave_map m = tc.map_value ();
 
@@ -296,47 +296,47 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
         writer.StartArray();
 
       // loop over the elements
-     for (octave_idx_type j = 0; j < numel; j++)
-      {
-        writer.StartObject();
-        
-        // Iterating over the list of keys will preserve the order
-        // of the fields.
-        for (octave_idx_type i = 0; i < nfields; i++)
-          {
-            //octave_stdout << elts[i][j] << std::endl;
-            //octave_stdout << elts[i][j].double_value() << std::endl;
-            octave_stdout << elts[i][j].class_name() << std::endl;
-            octave_stdout << elts[i][j].matrix_value() << std::endl;
-            
-            writer.Key(keys(i).c_str ());
-            
-            //writer.Double(elts[i][j].double_value());
-            
-            // recursive call
-            save_element (writer, elts[i][j]);
-            
-          }
+      for (octave_idx_type j = 0; j < numel; j++)
+        {
+          writer.StartObject();
 
-        writer.EndObject();
-      }
+          // Iterating over the list of keys will preserve the order
+          // of the fields.
+          for (octave_idx_type i = 0; i < nfields; i++)
+            {
+              //octave_stdout << elts[i][j] << std::endl;
+              //octave_stdout << elts[i][j].double_value() << std::endl;
+              octave_stdout << elts[i][j].class_name() << std::endl;
+              octave_stdout << elts[i][j].matrix_value() << std::endl;
+
+              writer.Key(keys(i).c_str ());
+
+              //writer.Double(elts[i][j].double_value());
+
+              // recursive call
+              save_element (writer, elts[i][j]);
+
+            }
+
+          writer.EndObject();
+        }
 
       if (numel > 1)
         writer.EndArray();
 
-     // FIXME: soll man einen struct als
-     // { "a": [1,2,3], "b" : [10,20,30]}
-     // oder
-     // [{ "a": 1, "b": 10},{ "a": 2, "b": 20},{ "a": 3, "b": 30}]
-     //
-     // ich glaube letzteres ist wohl bei JSONiander üblicher...
-    
+      // FIXME: soll man einen struct als
+      // { "a": [1,2,3], "b" : [10,20,30]}
+      // oder
+      // [{ "a": 1, "b": 10},{ "a": 2, "b": 20},{ "a": 3, "b": 30}]
+      //
+      // ich glaube letzteres ist wohl bei JSONiander üblicher...
+
     }
   else
     error ("not yet implemented");
-  
-  octave_stdout << "-----------------------------------------" << std::endl;  
-  
+
+  octave_stdout << "-----------------------------------------" << std::endl;
+
   return true;
 }
 
