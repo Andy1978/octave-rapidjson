@@ -68,10 +68,26 @@ DEFUN_DLD (save_json, args,, "save_json (obj)")
   return ovl (s.GetString());
 #endif
 
+#if 0
+  StringBuffer s;
+  Writer<StringBuffer> writer(s);
+  writer.StartArray();
+  writer.StartArray();
+  for (unsigned i = 0; i < 4; i++)
+      writer.Uint(i);
+  writer.EndArray();
+  writer.EndArray();
+  return ovl (s.GetString());
+#endif
+
   StringBuffer s;
   Writer<StringBuffer> writer(s);
 
+//~ writer.StartObject();
+
   save_element (writer, args(0));
+
+//~ writer.EndObject();
 
   return ovl (s.GetString());
 }
@@ -176,29 +192,37 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
       
       // Wieviel öffnende Klammern?
       for (int k = 0; k < d.length(); ++k)
-        //writer.StartArray();
-        cout << "[";
+        {
+          writer.StartArray();
+          //cout << "[" << endl;;
+        }
       
       octave_idx_type *idx = new octave_idx_type[d.ndims()];
       std::fill_n (idx, d.ndims(), 0);
       
       for (int k = 0; k < m.numel(); ++k)
         {
-          cout << pd[k] << " ";
-          //writer.Double (pd[k]);
+          writer.Double (pd[k]);
+          //cout << "pd[k]=" << pd[k] << endl;
 
           int r = d.increment_index (idx, 0);
+          //cout << "k=" << k << ", r=" << r << endl;
 
           for (int i = 0; i < r; ++i)
-            //writer.EndArray();
-            cout << "]";
+            {
+              writer.EndArray();
+              //cout << "]" << endl;
+            }
 
           if (r > 0 && r != d.ndims ())
-            //writer.StartArray();
-            cout << "[";
-        
+            for (int i = 0; i < r; ++i)
+              {
+                writer.StartArray();
+                //cout << "[" << endl;
+              }
+
         }
-  
+
       delete [] idx;
 
     }
