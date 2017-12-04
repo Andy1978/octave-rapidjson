@@ -314,6 +314,7 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
               //writer.Double(elts[i][j].double_value());
 
               // recursive call
+              cout << "recursive call" << endl;
               save_element (writer, elts[i][j]);
 
             }
@@ -331,6 +332,10 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
       //
       // ich glaube letzteres ist wohl bei JSONiander üblicher...
 
+    }
+  else if (tc.is_integer_type())
+    {
+      cout << "tc.is_integer_type() = " << tc.is_integer_type() << endl;
     }
   else
     error ("not yet implemented");
@@ -365,5 +370,6 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
 %! b(1).a = 4;
 %! b(2).c = pi;
 %! b(3).c = 2.718;
-%! assert (load_json (save_json (b)), b, eps)
+%! c = load_json (save_json (b));
+%! assert ([c{:}], b, eps)
 */
