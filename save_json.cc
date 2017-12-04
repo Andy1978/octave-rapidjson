@@ -106,8 +106,82 @@ DEFUN_DLD (save_json, args,, "save_json (obj)")
 
 bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
 {
+  octave_stdout << "-------------- save_element --------------------" << std::endl;
+
   std::string cname = tc.class_name ();
   octave_stdout << "cname = " << cname << std::endl;
+
+  // einfach mal alle "is"
+  // egrep "bool is_[a-z_]*" libinterp/octave-value/ov.h | sed s/bool//g
+
+#define DBG_OUT(x) cout << "  " << #x << " = " << tc.x() << endl;
+   DBG_OUT(is_zero_by_zero)
+   DBG_OUT(is_defined)
+   DBG_OUT(is_undefined) 
+   DBG_OUT(is_empty)
+  DBG_OUT(is_cell)
+  DBG_OUT(is_cellstr)
+  DBG_OUT(is_real_scalar)
+  DBG_OUT(is_real_matrix)
+  DBG_OUT(is_complex_scalar)
+  DBG_OUT(is_complex_matrix)
+  DBG_OUT(is_bool_scalar)
+  DBG_OUT(is_bool_matrix)
+  DBG_OUT(is_char_matrix)
+  DBG_OUT(is_diag_matrix)
+  DBG_OUT(is_perm_matrix)
+  DBG_OUT(is_string)
+  DBG_OUT(is_sq_string)
+  DBG_OUT(is_dq_string)
+  DBG_OUT(is_range)
+  DBG_OUT(is_map)
+  DBG_OUT(is_classdef_meta)
+  DBG_OUT(is_classdef_object)
+  DBG_OUT(is_classdef_superclass_ref)
+  DBG_OUT(is_package)
+  DBG_OUT(is_object)
+  DBG_OUT(is_java)
+  DBG_OUT(is_cs_list)
+  DBG_OUT(is_magic_colon)
+  DBG_OUT(is_null_value)
+  DBG_OUT(is_double_type)
+  DBG_OUT(is_single_type)
+  DBG_OUT(is_float_type)
+  DBG_OUT(is_int8_type)
+  DBG_OUT(is_int16_type)
+  DBG_OUT(is_int32_type)
+  DBG_OUT(is_int64_type)
+  DBG_OUT(is_uint8_type)
+  DBG_OUT(is_uint16_type)
+  DBG_OUT(is_uint32_type)
+  DBG_OUT(is_uint64_type)
+  DBG_OUT(is_integer_type)
+  DBG_OUT(islogical)
+  DBG_OUT(is_bool_type)
+  DBG_OUT(is_real_type)
+  DBG_OUT(is_complex_type)
+  DBG_OUT(is_scalar_type)
+  DBG_OUT(is_matrix_type)
+  DBG_OUT(is_numeric_type)
+  DBG_OUT(is_sparse_type)
+  DBG_OUT(is_constant)
+  DBG_OUT(is_function_handle)
+  DBG_OUT(is_anonymous_function)
+  DBG_OUT(is_inline_function)
+  DBG_OUT(is_function)
+  DBG_OUT(is_user_script)
+  DBG_OUT(is_user_function)
+  DBG_OUT(is_user_code)
+  DBG_OUT(is_builtin_function)
+  DBG_OUT(is_dld_function)
+  DBG_OUT(is_mex_function)
+
+if (! tc.is_cell ())
+  DBG_OUT(is_true)
+
+
+
+
 
   //int32_t nr = tc.rows ();
   //int32_t nc = tc.columns ();
@@ -129,6 +203,10 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
     {
       octave_stdout << "is_string()" << std::endl;
 
+      // char matrix mit Leerzeichen speichern,
+      // save_json(["foo"; "foobar"; "baz"])
+      // ergibt ["foo   ","foobar","baz   "]
+
       octave::unwind_protect frame;
 
       charMatrix chm = tc.char_matrix_value ();
@@ -136,7 +214,9 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
       octave_idx_type nrow = chm.rows ();
       //octave_idx_type ncol = chm.cols ();
 
-      //OCTAVE_LOCAL_BUFFER (double, buf, ncol*nrow);
+      if (nrow > 1)
+        writer.StartArray ();
+
 
       for (octave_idx_type i = 0; i < nrow; i++)
         {
@@ -144,7 +224,12 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
           //const char *s = tstr.data ();
 
           octave_stdout << tstr << std::endl;
+          
+          writer.String (tstr.c_str ());
         }
+
+      if (nrow > 1)
+        writer.EndArray ();
 
     }
   else if (tc.is_range ())
@@ -264,7 +349,63 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
     }
   else if (tc.is_cell ())
     {
+      octave_stdout << "is_cell()" << std::endl;
       Cell cell = tc.cell_value ();
+
+      // swap first two dimensions, see also
+      // https://stackoverflow.com/questions/45855978/agreement-how-a-matrix-2d-is-stored-as-json
+      {
+        Array<int> p(dim_vector(cell.ndims(), 1));
+        for (int k = 2; k < cell.ndims(); ++k)
+          p(k) = k;
+        p(0) = 1;
+        p(1) = 0;
+        cell = cell.permute (p);
+      }
+
+      octave_stdout << "ndims() = " << cell.ndims () << std::endl;
+      dim_vector d = cell.dims ();
+      octave_stdout << "dims() = " << d.str() << std::endl;
+      
+      octave_idx_type *idx = new octave_idx_type[d.ndims()];
+      std::fill_n (idx, d.ndims(), 0);
+          
+      int r = d.ndims ();
+      if (d.isvector ())
+        r--;
+
+      for (int i = 0; i < r; ++i)
+        {
+          //cout << "StartArray" << endl;
+          writer.StartArray ();
+        }
+      do
+        {
+          octave_idx_type lidx = d.compute_index(idx);
+          //cout << "cell recursive call" << endl;
+          
+          save_element (writer, cell(lidx));
+
+          r = d.increment_index (idx, 0);
+          //cout << "r = " << r << endl;
+
+          for (int i = 0; i < r; ++i)
+            {
+              if (r == d.ndims ())
+                i++;
+              //cout << "EndArray" << endl;
+              writer.EndArray ();
+            }
+          if (r != d.ndims () && r > 0)
+            for (int i = 0; i < r; ++i)
+              {
+                //cout << "StartArray" << endl;
+                writer.StartArray ();
+              }
+
+        }
+      while (r != d.ndims ());
+  
     }
   else if (tc.is_map ())
     {
@@ -306,8 +447,8 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
             {
               //octave_stdout << elts[i][j] << std::endl;
               //octave_stdout << elts[i][j].double_value() << std::endl;
-              octave_stdout << elts[i][j].class_name() << std::endl;
-              octave_stdout << elts[i][j].matrix_value() << std::endl;
+              octave_stdout << "class_name = " << elts[i][j].class_name() << std::endl;
+              //octave_stdout << elts[i][j].matrix_value() << std::endl;
 
               writer.Key(keys(i).c_str ());
 
@@ -339,8 +480,6 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
     }
   else
     error ("not yet implemented");
-
-  octave_stdout << "-----------------------------------------" << std::endl;
 
   return true;
 }
