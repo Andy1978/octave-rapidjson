@@ -22,7 +22,7 @@
 
 #include <iostream>
 
-#include "rapidjson/writer.h"
+#include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/error/en.h"
 
@@ -32,80 +32,24 @@
 using namespace rapidjson;
 using namespace std;
 
-template <typename T> void save_matrix (Writer<StringBuffer> &writer, T);
-bool save_element (Writer<StringBuffer> &writer, const octave_value& tc);
+template <typename T> void save_matrix (PrettyWriter<StringBuffer> &writer, T);
+bool save_element (PrettyWriter<StringBuffer> &writer, const octave_value& tc);
 
 DEFUN_DLD (save_json, args,, "save_json (obj)")
 {
-  if (args.length () != 1)
+  int nargs = args.length ();
+
+  if (nargs != 1)
     print_usage ();
-
-// I think ls-mat5.cc:save_mat5_binary_element
-// and the other save functions are a good source to see
-// how to traverse an octave-value
-
-#if 0
+  
   StringBuffer s;
-  Writer<StringBuffer> writer(s);
-  writer.StartObject();
-  writer.Key("hello");
-  writer.String("world");
-  writer.Key("t");
-  writer.Bool(true);
-  writer.Key("f");
-  writer.Bool(false);
-  writer.Key("n");
-  writer.Null();
-  writer.Key("i");
-  writer.Uint(123);
-  writer.Key("pi");
-  writer.Double(3.1416);
-  writer.Key("a");
-  writer.StartArray();
-  for (unsigned i = 0; i < 4; i++)
-    writer.Uint(i);
-  writer.EndArray();
-  writer.EndObject();
-  return ovl (s.GetString());
-#endif
-
-#if 0
-  StringBuffer s;
-  Writer<StringBuffer> writer(s);
-//  writer.StartObject();
-  writer.StartArray();
-  writer.StartObject();
-  writer.Key("hello");
-  writer.String("world");
-  writer.EndObject();
-  writer.EndArray();
-//  writer.EndObject();
-  return ovl (s.GetString());
-#endif
-
-#if 0
-  StringBuffer s;
-  Writer<StringBuffer> writer(s);
-  writer.StartArray();
-  writer.StartArray();
-  for (unsigned i = 0; i < 4; i++)
-    writer.Uint(i);
-  writer.EndArray();
-  writer.EndArray();
-  return ovl (s.GetString());
-#endif
-
-
-#if 1
-  StringBuffer s;
-  Writer<StringBuffer> writer(s);
+  PrettyWriter<StringBuffer> writer(s);
   save_element (writer, args(0));
-  return ovl (s.GetString());
-#endif
 
+  return ovl (s.GetString());
 }
 
-template <typename T> void save_matrix (Writer<StringBuffer> &writer, T m)
+template <typename T> void save_matrix (PrettyWriter<StringBuffer> &writer, T m)
 {
   DBG_OUT(m.numel ());
   DBG_OUT(m.ndims ());
@@ -190,10 +134,10 @@ template <typename T> void save_matrix (Writer<StringBuffer> &writer, T m)
 
 }
 
-bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
+bool save_element (PrettyWriter<StringBuffer> &writer, const octave_value& tc)
 {
 #ifdef DEBUG
-  octave_stdout << "-------------- save_element --------------------" << std::endl;
+  std::cout << "-------------- save_element --------------------" << std::endl;
 #endif
 
   std::string cname = tc.class_name ();
@@ -201,81 +145,83 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
 
   // einfach mal alle "is"
   // egrep "bool is_[a-z_]*" libinterp/octave-value/ov.h | sed s/bool//g
-#if 0
 
-  DBG_OUT(tc.is_zero_by_zero())
-  DBG_OUT(tc.is_defined())
-  DBG_OUT(tc.is_undefined())
-  DBG_OUT(tc.is_empty())
-  DBG_OUT(tc.is_cell())
-  DBG_OUT(tc.is_cellstr())
-  DBG_OUT(tc.is_real_scalar())
-  DBG_OUT(tc.is_real_matrix())
-  DBG_OUT(tc.is_complex_scalar())
-  DBG_OUT(tc.is_complex_matrix())
-  DBG_OUT(tc.is_bool_scalar())
-  DBG_OUT(tc.is_bool_matrix())
-  DBG_OUT(tc.is_char_matrix())
-  DBG_OUT(tc.is_diag_matrix())
-  DBG_OUT(tc.is_perm_matrix())
-  DBG_OUT(tc.is_string())
-  DBG_OUT(tc.is_sq_string())
-  DBG_OUT(tc.is_dq_string())
-  DBG_OUT(tc.is_range())
-  DBG_OUT(tc.is_map())
+#if 1
+  DBG_OUT(tc.is_zero_by_zero());
+  DBG_OUT(tc.is_defined());
+  DBG_OUT(tc.is_undefined());
+  DBG_OUT(tc.is_empty());
+  DBG_OUT(tc.is_cell());
+  DBG_OUT(tc.is_cellstr());
+  DBG_OUT(tc.is_real_scalar());
+  DBG_OUT(tc.is_real_matrix());
+  DBG_OUT(tc.is_complex_scalar());
+  DBG_OUT(tc.is_complex_matrix());
+  DBG_OUT(tc.is_bool_scalar());
+  DBG_OUT(tc.is_bool_matrix());
+  DBG_OUT(tc.is_char_matrix());
+  DBG_OUT(tc.is_diag_matrix());
+  DBG_OUT(tc.is_perm_matrix());
+  DBG_OUT(tc.is_string());
+  DBG_OUT(tc.is_sq_string());
+  DBG_OUT(tc.is_dq_string());
+  DBG_OUT(tc.is_range());
+  DBG_OUT(tc.is_map());
 #if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION >= 2
-  DBG_OUT(tc.is_classdef_meta())
-  DBG_OUT(tc.is_classdef_superclass_ref())
-  DBG_OUT(tc.is_package())
-  DBG_OUT(tc.islogical())
+  DBG_OUT(tc.is_classdef_meta());
+  DBG_OUT(tc.is_classdef_superclass_ref());
+  DBG_OUT(tc.is_package());
+  DBG_OUT(tc.islogical());
 #endif
 
-  DBG_OUT(tc.is_classdef_object())
-  DBG_OUT(tc.is_object())
-  DBG_OUT(tc.is_java())
-  DBG_OUT(tc.is_cs_list())
-  DBG_OUT(tc.is_magic_colon())
-  DBG_OUT(tc.is_null_value())
-  DBG_OUT(tc.is_double_type())
-  DBG_OUT(tc.is_single_type())
-  DBG_OUT(tc.is_float_type())
-  DBG_OUT(tc.is_int8_type())
-  DBG_OUT(tc.is_int16_type())
-  DBG_OUT(tc.is_int32_type())
-  DBG_OUT(tc.is_int64_type())
-  DBG_OUT(tc.is_uint8_type())
-  DBG_OUT(tc.is_uint16_type())
-  DBG_OUT(tc.is_uint32_type())
-  DBG_OUT(tc.is_uint64_type())
-  DBG_OUT(tc.is_integer_type())
-  DBG_OUT(tc.is_bool_type())
-  DBG_OUT(tc.is_real_type())
-  DBG_OUT(tc.is_complex_type())
-  DBG_OUT(tc.is_scalar_type())
-  DBG_OUT(tc.is_matrix_type())
-  DBG_OUT(tc.is_numeric_type())
-  DBG_OUT(tc.is_sparse_type())
-  DBG_OUT(tc.is_constant())
-  DBG_OUT(tc.is_function_handle())
-  DBG_OUT(tc.is_anonymous_function())
-  DBG_OUT(tc.is_inline_function())
-  DBG_OUT(tc.is_function())
-  DBG_OUT(tc.is_user_script())
-  DBG_OUT(tc.is_user_function())
-  DBG_OUT(tc.is_user_code())
-  DBG_OUT(tc.is_builtin_function())
-  DBG_OUT(tc.is_dld_function())
-  DBG_OUT(tc.is_mex_function())
+  DBG_OUT(tc.is_classdef_object());
+  DBG_OUT(tc.is_object());
+  DBG_OUT(tc.is_java());
+  DBG_OUT(tc.is_cs_list());
+  DBG_OUT(tc.is_magic_colon());
+  DBG_OUT(tc.is_null_value());
+  DBG_OUT(tc.is_double_type());
+  DBG_OUT(tc.is_single_type());
+  DBG_OUT(tc.is_float_type());
+  DBG_OUT(tc.is_int8_type());
+  DBG_OUT(tc.is_int16_type());
+  DBG_OUT(tc.is_int32_type());
+  DBG_OUT(tc.is_int64_type());
+  DBG_OUT(tc.is_uint8_type());
+  DBG_OUT(tc.is_uint16_type());
+  DBG_OUT(tc.is_uint32_type());
+  DBG_OUT(tc.is_uint64_type());
+  DBG_OUT(tc.is_integer_type());
+  DBG_OUT(tc.is_bool_type());
+  DBG_OUT(tc.is_real_type());
+  DBG_OUT(tc.is_complex_type());
+  DBG_OUT(tc.is_scalar_type());
+  DBG_OUT(tc.is_matrix_type());
+  DBG_OUT(tc.is_numeric_type());
+  DBG_OUT(tc.is_sparse_type());
+  DBG_OUT(tc.is_constant());
+  DBG_OUT(tc.is_function_handle());
+  DBG_OUT(tc.is_anonymous_function());
+  DBG_OUT(tc.is_inline_function());
+  DBG_OUT(tc.is_function());
+  DBG_OUT(tc.is_user_script());
+  DBG_OUT(tc.is_user_function());
+  DBG_OUT(tc.is_user_code());
+  DBG_OUT(tc.is_builtin_function());
+  DBG_OUT(tc.is_dld_function());
+  DBG_OUT(tc.is_mex_function());
 
 if (! tc.is_cell ())
-  DBG_OUT(tc.is_true())  // not defined for cell
+  {
+    DBG_OUT(tc.is_true());  // not defined for cell
+  }
 
 #endif
 
   if (tc.is_sparse_type ())
     {
 #ifdef DEBUG
-      octave_stdout << "issparse, nnz = " <<  tc.nnz () << ", iscomplex = " << tc.is_complex_type () << std::endl;
+      std::cout << "issparse, nnz = " <<  tc.nnz () << ", iscomplex = " << tc.is_complex_type () << std::endl;
 #endif
       error ("JSON can't handle sparse matrix, convert to full matrix first (using 'full')");
     }
@@ -290,33 +236,37 @@ if (! tc.is_cell ())
   else if (tc.is_string ())
     {
 
-      // char matrix mit Leerzeichen speichern,
-      // save_json(["foo"; "foobar"; "baz"])
-      // ergibt ["foo   ","foobar","baz   "]
-
-      //unwind_protect frame;
-
-      charMatrix chm = tc.char_matrix_value ();
-
-      octave_idx_type nrow = chm.rows ();
-      //octave_idx_type ncol = chm.cols ();
-
-      if (nrow > 1)
-        writer.StartArray ();
-
-      for (octave_idx_type i = 0; i < nrow; i++)
+      if (tc.is_empty ())
+        writer.String ("");
+      else
         {
-          std::string tstr = chm.row_as_string (i);
-          //const char *s = tstr.data ();
+          // char matrix mit Leerzeichen speichern,
+          // save_json(["foo"; "foobar"; "baz"])
+          // ergibt ["foo   ","foobar","baz   "]
 
-          octave_stdout << tstr << std::endl;
+          //unwind_protect frame;
 
-          writer.String (tstr.c_str ());
+          charMatrix chm = tc.char_matrix_value ();
+
+          octave_idx_type nrow = chm.rows ();
+          //octave_idx_type ncol = chm.cols ();
+
+          if (nrow > 1)
+            writer.StartArray ();
+
+          for (octave_idx_type i = 0; i < nrow; i++)
+            {
+              std::string tstr = chm.row_as_string (i);
+              //const char *s = tstr.data ();
+
+              DBG_OUT(chm.row_as_string(i));
+
+              writer.String (tstr.c_str ());
+            }
+
+          if (nrow > 1)
+            writer.EndArray ();
         }
-
-      if (nrow > 1)
-        writer.EndArray ();
-
     }
   else if (tc.is_range ())
     {
@@ -337,32 +287,33 @@ if (! tc.is_cell ())
       // convert to matrix
       save_element (writer, r.matrix_value());
     }
+  else if (tc.is_bool_scalar ())
+    {
+       writer.Bool (tc.bool_value ());
+    }
+  else if (tc.is_bool_matrix ())
+    {
+       boolNDArray b = tc.bool_array_value ();
+       save_matrix (writer, b);
+    }
   else if (tc.is_real_scalar ())
     {
-      //octave_stdout << "is_real_scalar() = " << tc.is_real_scalar() << std::endl;
-      //octave_stdout << "is_integer_type() = " << tc.is_integer_type() << std::endl;
-
       if (tc.is_integer_type ())
         writer.Int(tc.int_value ());
       else if (tc.is_real_type ())
         writer.Double (tc.double_value ());
       else if (tc.is_complex_type ())
         error ("complex not yet supported");
-
     }
   else if (tc.is_real_matrix ())
     {
       NDArray m = tc.array_value ();
-
       save_matrix (writer, m);
-
     }
   else if (tc.is_cell ())
     {
       Cell cell = tc.cell_value ();
-
       save_matrix (writer, cell);
-
     }
   else if (tc.is_complex_scalar ())
     {
@@ -386,7 +337,7 @@ if (! tc.is_cell ())
       //int32_t maxfieldnamelength = max_namelen + 1;
 
       octave_idx_type nfields = m.nfields ();
-      octave_stdout << "isstruct(), nfields = " << nfields << std::endl;
+      DBG_OUT (nfields);
 
       string_vector keys = m.keys ();
 
@@ -394,11 +345,11 @@ if (! tc.is_cell ())
       for (octave_idx_type i = 0; i < nfields; i++)
         {
           std::string key = keys(i);
-          octave_stdout << "keys(" << i << ") = " << key << std::endl;
+          DBG_OUT(keys(i));
         }
 
       octave_idx_type numel = m.numel ();
-      octave_stdout << "m.numel = " << numel << std::endl;
+      DBG_OUT(m.numel ());
 
       std::vector<const octave_value *> elts (nfields);
       for (octave_idx_type i = 0; i < nfields; i++)
@@ -416,19 +367,13 @@ if (! tc.is_cell ())
           // of the fields.
           for (octave_idx_type i = 0; i < nfields; i++)
             {
-              //octave_stdout << elts[i][j] << std::endl;
-              //octave_stdout << elts[i][j].double_value() << std::endl;
-              octave_stdout << "class_name = " << elts[i][j].class_name() << std::endl;
-              //octave_stdout << elts[i][j].matrix_value() << std::endl;
+
+              DBG_OUT(elts[i][j].class_name());
 
               writer.Key(keys(i).c_str ());
 
-              //writer.Double(elts[i][j].double_value());
-
               // recursive call
-              cout << "recursive call" << endl;
               save_element (writer, elts[i][j]);
-
             }
 
           writer.EndObject();
@@ -456,25 +401,80 @@ if (! tc.is_cell ())
 }
 
 /*
+
+*** empty ***
+
 %!test
 %! a = [];
 %! assert (load_json (save_json (a)), a);
 
 %!test
+%! a.foo = "";
+%! assert (load_json (save_json (a)), a);
+
+*** logical ***
+
+%!test
+%! a.foo = true;
+%! assert (load_json (save_json (a)), a);
+
+%!test
+%! a.foo = false;
+%! assert (load_json (save_json (a)), a);
+
+%!test
+%! a = [true false];
+%! assert (save_json (a), "[\n    true,\n    false\n]");
+
+*** scalars ***
+
+%!test
 %! a = pi;
 %! assert (load_json (save_json (a)), a);
+
+*** row vector ***
 
 %!test
 %! a = [2, 3, 4];
 %! assert (load_json (save_json (a)), a);
 
+*** column vector ***
+
 %!test
 %! a = [2; 3; 4];
 %! assert (load_json (save_json (a)), a);
 
+*** Matrix ***
+
 %!test
 %! a = rand (4, 2, 3);
 %! assert (load_json (save_json (a)), a, eps);
+
+*** NDArray ***
+
+%!test
+%! a = rand (4, 3);
+%! assert (load_json (save_json (a)), a, eps);
+
+*** strings ***
+
+%!test
+%! a.foo = "bar";
+%! assert (load_json (save_json (a)), a)
+
+%!test
+%! a.foo = 'bar';
+%! assert (load_json (save_json (a)), a)
+
+%!test
+%! a = {"foo", "bar", "hello"};
+%! assert (load_json (save_json (a)), a)
+
+%!test
+%! a = {"foo"; "bar"; "hello"};
+%! assert (load_json (save_json (a)), a)
+
+*** structs ***
 
 %!test
 %! b(1).a = 4;

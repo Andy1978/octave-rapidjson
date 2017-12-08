@@ -274,11 +274,11 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
       if (int(ok.Offset()) - left < 0)
         left = ok.Offset();
 
-      octave_stdout << "JSON Debug:" << json.substr (ok.Offset() - left, left + HALF_DBG_OUT + 1) << endl;
-      octave_stdout << "JSON Debug:";
+      std::cout << "JSON Debug:" << json.substr (ok.Offset() - left, left + HALF_DBG_OUT + 1) << endl;
+      std::cout << "JSON Debug:";
       for (int k = 0; k < left; ++k)
-        octave_stdout << " ";
-      octave_stdout << "^" << endl;;
+        std::cout << " ";
+      std::cout << "^" << endl;;
 
       error ("JSON parse error: '%s' at offset %u",
              rapidjson::GetParseError_En (ok.Code()),
