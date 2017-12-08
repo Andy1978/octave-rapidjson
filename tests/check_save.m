@@ -48,8 +48,8 @@ save_json (b)
 #####################################
 ## real_matrix
 
-if 0
-  for k=1:10
+if 1
+  for k=1:100
 
     ndim = randi (5, 1, 1);
     a = rand(randi (6, ndim, 1));
@@ -60,7 +60,7 @@ endif
 
 ####################################
 ## integer
-if 0
+if 1
   a = uint32(5)
   assert (load_json (save_json (a)), a)
 endif

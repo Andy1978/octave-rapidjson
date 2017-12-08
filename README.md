@@ -5,12 +5,13 @@
 ## Ready for test
 
 * `load_json (json_string)`. If you want to parse from file use `load_json (fileread (filename))`
+* `save_json (obj)`
 
 ## ToDo
 
 * ~~Add many, many tests and "make check" target to Makefile~~
 * ~~Implement 2D arrays (Matrix) and later N-dimensional arrays~~
-* Implement `save_json (json_string)`
+* ~~Implement `save_json (obj)`~~
 
 ## Optimization ideas
 
@@ -33,5 +34,5 @@ If you want to start using the C++ API liboctave here are some links to useful r
 
 ## Other JSON Parser for GNU Octave on github
 
-* https://github.com/fangq/jsonlab (pure .m files
+* https://github.com/fangq/jsonlab (pure .m files)
 * https://github.com/gllmflndn/JSONio (uses C lib jsmn)
