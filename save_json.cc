@@ -32,6 +32,7 @@
 using namespace rapidjson;
 using namespace std;
 
+template <typename T> void save_matrix (Writer<StringBuffer> &writer, T);
 bool save_element (Writer<StringBuffer> &writer, const octave_value& tc);
 
 DEFUN_DLD (save_json, args,, "save_json (obj)")
@@ -104,91 +105,178 @@ DEFUN_DLD (save_json, args,, "save_json (obj)")
 
 }
 
+template <typename T> void save_matrix (Writer<StringBuffer> &writer, T m)
+{
+  DBG_OUT(m.numel ());
+  DBG_OUT(m.ndims ());
+
+  // T can be NDArray or Cell
+  if (m.is_empty ())
+    writer.Null ();
+  else
+    {
+
+      // swap first two dimensions, see also
+      // https://stackoverflow.com/questions/45855978/agreement-how-a-matrix-2d-is-stored-as-json
+      {
+        // FIXME: I'm sure there must be a better way to create p
+        Array<int> p(dim_vector(m.ndims(), 1));
+        for (int k = 2; k < m.ndims(); ++k)
+          p(k) = k;
+        p(0) = 1;
+        p(1) = 0;
+        m = m.permute (p);
+      }
+
+      // Dimensions of input (after swapping the first two dimensions)
+      dim_vector d = m.dims ();
+      DBG_OUT(m.dims ().str());
+
+      int ndims = d.length ();
+      octave_idx_type *idx = new octave_idx_type[ndims];
+      std::fill_n (idx, ndims, 0);
+
+      int is_row_vector = (ndims == 2 && d(1) == 1);
+
+      int dim_index = 0;
+
+      // dive into
+      for (int i = 0; i < (ndims - is_row_vector); ++i)
+        {
+          DBG_MSG1(0, "StartArray");
+          writer.StartArray ();
+        }
+
+      do
+        {
+          octave_idx_type linear_idx = d.compute_index (idx);
+
+
+          // FIXME: hier prüfen, ob es sich um eine Nicht-Cell Matrix handelt,
+          // wenn ja, dann kann man sich den rekursiven Aufruf sparen und
+          // ggf. mehr Geschwindigkeit rausholen
+
+          //cout << "cell recursive call" << endl;
+          save_element (writer, m(linear_idx));
+
+          dim_index = d.increment_index (idx, 0);
+          DBG_OUT (dim_index)
+
+          for (int i = 0; i < dim_index; ++i)
+            {
+              // omit last EndArray if it's a row vector
+              if (dim_index == ndims)
+                i += is_row_vector;
+
+              DBG_MSG1(0, "EndArray");
+              writer.EndArray ();
+            }
+
+          // reopen array if we haven't reached the end
+          if (dim_index > 0 && dim_index != ndims)
+            for (int i = 0; i < dim_index; ++i)
+              {
+                DBG_MSG1(0, "StartArray");
+                writer.StartArray ();
+              }
+
+        }
+      while (dim_index != ndims);
+
+
+
+      delete [] idx;
+    }
+
+}
+
 bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
 {
+#ifdef DEBUG
   octave_stdout << "-------------- save_element --------------------" << std::endl;
+#endif
 
   std::string cname = tc.class_name ();
-  octave_stdout << "cname = " << cname << std::endl;
+  DBG_OUT(cname);
 
   // einfach mal alle "is"
   // egrep "bool is_[a-z_]*" libinterp/octave-value/ov.h | sed s/bool//g
+#if 0
 
-#define DBG_OUT(x) cout << "  " << #x << " = " << tc.x() << endl;
-   DBG_OUT(is_zero_by_zero)
-   DBG_OUT(is_defined)
-   DBG_OUT(is_undefined) 
-   DBG_OUT(is_empty)
-  DBG_OUT(is_cell)
-  DBG_OUT(is_cellstr)
-  DBG_OUT(is_real_scalar)
-  DBG_OUT(is_real_matrix)
-  DBG_OUT(is_complex_scalar)
-  DBG_OUT(is_complex_matrix)
-  DBG_OUT(is_bool_scalar)
-  DBG_OUT(is_bool_matrix)
-  DBG_OUT(is_char_matrix)
-  DBG_OUT(is_diag_matrix)
-  DBG_OUT(is_perm_matrix)
-  DBG_OUT(is_string)
-  DBG_OUT(is_sq_string)
-  DBG_OUT(is_dq_string)
-  DBG_OUT(is_range)
-  DBG_OUT(is_map)
-  DBG_OUT(is_classdef_meta)
-  DBG_OUT(is_classdef_object)
-  DBG_OUT(is_classdef_superclass_ref)
-  DBG_OUT(is_package)
-  DBG_OUT(is_object)
-  DBG_OUT(is_java)
-  DBG_OUT(is_cs_list)
-  DBG_OUT(is_magic_colon)
-  DBG_OUT(is_null_value)
-  DBG_OUT(is_double_type)
-  DBG_OUT(is_single_type)
-  DBG_OUT(is_float_type)
-  DBG_OUT(is_int8_type)
-  DBG_OUT(is_int16_type)
-  DBG_OUT(is_int32_type)
-  DBG_OUT(is_int64_type)
-  DBG_OUT(is_uint8_type)
-  DBG_OUT(is_uint16_type)
-  DBG_OUT(is_uint32_type)
-  DBG_OUT(is_uint64_type)
-  DBG_OUT(is_integer_type)
-  DBG_OUT(islogical)
-  DBG_OUT(is_bool_type)
-  DBG_OUT(is_real_type)
-  DBG_OUT(is_complex_type)
-  DBG_OUT(is_scalar_type)
-  DBG_OUT(is_matrix_type)
-  DBG_OUT(is_numeric_type)
-  DBG_OUT(is_sparse_type)
-  DBG_OUT(is_constant)
-  DBG_OUT(is_function_handle)
-  DBG_OUT(is_anonymous_function)
-  DBG_OUT(is_inline_function)
-  DBG_OUT(is_function)
-  DBG_OUT(is_user_script)
-  DBG_OUT(is_user_function)
-  DBG_OUT(is_user_code)
-  DBG_OUT(is_builtin_function)
-  DBG_OUT(is_dld_function)
-  DBG_OUT(is_mex_function)
+  DBG_OUT(tc.is_zero_by_zero())
+  DBG_OUT(tc.is_defined())
+  DBG_OUT(tc.is_undefined())
+  DBG_OUT(tc.is_empty())
+  DBG_OUT(tc.is_cell())
+  DBG_OUT(tc.is_cellstr())
+  DBG_OUT(tc.is_real_scalar())
+  DBG_OUT(tc.is_real_matrix())
+  DBG_OUT(tc.is_complex_scalar())
+  DBG_OUT(tc.is_complex_matrix())
+  DBG_OUT(tc.is_bool_scalar())
+  DBG_OUT(tc.is_bool_matrix())
+  DBG_OUT(tc.is_char_matrix())
+  DBG_OUT(tc.is_diag_matrix())
+  DBG_OUT(tc.is_perm_matrix())
+  DBG_OUT(tc.is_string())
+  DBG_OUT(tc.is_sq_string())
+  DBG_OUT(tc.is_dq_string())
+  DBG_OUT(tc.is_range())
+  DBG_OUT(tc.is_map())
+#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION >= 2
+  DBG_OUT(tc.is_classdef_meta())
+  DBG_OUT(tc.is_classdef_superclass_ref())
+  DBG_OUT(tc.is_package())
+  DBG_OUT(tc.islogical())
+#endif
+
+  DBG_OUT(tc.is_classdef_object())
+  DBG_OUT(tc.is_object())
+  DBG_OUT(tc.is_java())
+  DBG_OUT(tc.is_cs_list())
+  DBG_OUT(tc.is_magic_colon())
+  DBG_OUT(tc.is_null_value())
+  DBG_OUT(tc.is_double_type())
+  DBG_OUT(tc.is_single_type())
+  DBG_OUT(tc.is_float_type())
+  DBG_OUT(tc.is_int8_type())
+  DBG_OUT(tc.is_int16_type())
+  DBG_OUT(tc.is_int32_type())
+  DBG_OUT(tc.is_int64_type())
+  DBG_OUT(tc.is_uint8_type())
+  DBG_OUT(tc.is_uint16_type())
+  DBG_OUT(tc.is_uint32_type())
+  DBG_OUT(tc.is_uint64_type())
+  DBG_OUT(tc.is_integer_type())
+  DBG_OUT(tc.is_bool_type())
+  DBG_OUT(tc.is_real_type())
+  DBG_OUT(tc.is_complex_type())
+  DBG_OUT(tc.is_scalar_type())
+  DBG_OUT(tc.is_matrix_type())
+  DBG_OUT(tc.is_numeric_type())
+  DBG_OUT(tc.is_sparse_type())
+  DBG_OUT(tc.is_constant())
+  DBG_OUT(tc.is_function_handle())
+  DBG_OUT(tc.is_anonymous_function())
+  DBG_OUT(tc.is_inline_function())
+  DBG_OUT(tc.is_function())
+  DBG_OUT(tc.is_user_script())
+  DBG_OUT(tc.is_user_function())
+  DBG_OUT(tc.is_user_code())
+  DBG_OUT(tc.is_builtin_function())
+  DBG_OUT(tc.is_dld_function())
+  DBG_OUT(tc.is_mex_function())
 
 if (! tc.is_cell ())
-  DBG_OUT(is_true)
+  DBG_OUT(tc.is_true())  // not defined for cell
 
-
-
-
-
-  //int32_t nr = tc.rows ();
-  //int32_t nc = tc.columns ();
+#endif
 
   if (tc.is_sparse_type ())
     {
+#ifdef DEBUG
       octave_stdout << "issparse, nnz = " <<  tc.nnz () << ", iscomplex = " << tc.is_complex_type () << std::endl;
+#endif
       error ("JSON can't handle sparse matrix, convert to full matrix first (using 'full')");
     }
   else if (tc.is_inline_function ())
@@ -201,13 +289,12 @@ if (! tc.is_cell ())
     }
   else if (tc.is_string ())
     {
-      octave_stdout << "is_string()" << std::endl;
 
       // char matrix mit Leerzeichen speichern,
       // save_json(["foo"; "foobar"; "baz"])
       // ergibt ["foo   ","foobar","baz   "]
 
-      octave::unwind_protect frame;
+      //unwind_protect frame;
 
       charMatrix chm = tc.char_matrix_value ();
 
@@ -217,14 +304,13 @@ if (! tc.is_cell ())
       if (nrow > 1)
         writer.StartArray ();
 
-
       for (octave_idx_type i = 0; i < nrow; i++)
         {
           std::string tstr = chm.row_as_string (i);
           //const char *s = tstr.data ();
 
           octave_stdout << tstr << std::endl;
-          
+
           writer.String (tstr.c_str ());
         }
 
@@ -234,7 +320,6 @@ if (! tc.is_cell ())
     }
   else if (tc.is_range ())
     {
-      octave_stdout << "is_range()" << std::endl;
       Range r = tc.range_value ();
 
       // FIXME: Should a range be stored separately
@@ -254,8 +339,8 @@ if (! tc.is_cell ())
     }
   else if (tc.is_real_scalar ())
     {
-      octave_stdout << "is_real_scalar() = " << tc.is_real_scalar() << std::endl;
-      octave_stdout << "is_integer_type() = " << tc.is_integer_type() << std::endl;
+      //octave_stdout << "is_real_scalar() = " << tc.is_real_scalar() << std::endl;
+      //octave_stdout << "is_integer_type() = " << tc.is_integer_type() << std::endl;
 
       if (tc.is_integer_type ())
         writer.Int(tc.int_value ());
@@ -267,145 +352,31 @@ if (! tc.is_cell ())
     }
   else if (tc.is_real_matrix ())
     {
-      octave_stdout << "is_real_matrix()" << std::endl;
       NDArray m = tc.array_value ();
 
-      if (m.is_empty())
-        writer.Null ();
-      else
-        {
-          //octave_stdout << "numel=" << m.numel() << std::endl;
-          //octave_stdout << "ndims=" << m.ndims() << std::endl;
+      save_matrix (writer, m);
 
-          // swap first two dimensions, see also
-          // https://stackoverflow.com/questions/45855978/agreement-how-a-matrix-2d-is-stored-as-json
-          {
-            Array<int> p(dim_vector(m.ndims(), 1));
-            for (int k = 2; k < m.ndims(); ++k)
-              p(k) = k;
-            p(0) = 1;
-            p(1) = 0;
-            m = m.permute (p);
-          }
+    }
+  else if (tc.is_cell ())
+    {
+      Cell cell = tc.cell_value ();
 
-          dim_vector d = m.dims ();
+      save_matrix (writer, cell);
 
-          // Achtung, hier schon gedreht
-          //octave_stdout << "d = " << d.str () << std::endl;
-
-          const double *pd = m.fortran_vec ();
-
-          // Wieviel öffnende Klammern?
-          for (int k = 0; k < d.length(); ++k)
-            {
-              writer.StartArray();
-              //cout << "[" << endl;;
-            }
-
-          octave_idx_type *idx = new octave_idx_type[d.ndims()];
-          std::fill_n (idx, d.ndims(), 0);
-
-          for (int k = 0; k < m.numel(); ++k)
-            {
-              writer.Double (pd[k]);
-              //cout << "pd[k]=" << pd[k] << endl;
-
-              int r = d.increment_index (idx, 0);
-              //cout << "k=" << k << ", r=" << r << endl;
-
-              for (int i = 0; i < r; ++i)
-                {
-                  writer.EndArray();
-                  //cout << "]" << endl;
-                }
-
-              if (r > 0 && r != d.ndims ())
-                for (int i = 0; i < r; ++i)
-                  {
-                    writer.StartArray();
-                    //cout << "[" << endl;
-                  }
-
-            }
-
-          delete [] idx;
-        }
     }
   else if (tc.is_complex_scalar ())
     {
-      octave_stdout << "is_complex_scalar()" << std::endl;
       //Complex tmp = tc.complex_value ();
       //~ os.write (reinterpret_cast<char *> (&tmp), 16);
     }
   else if (tc.is_complex_matrix ())
     {
-      octave_stdout << "is_complex_matrix()" << std::endl;
       ComplexMatrix m_cmplx = tc.complex_matrix_value ();
       //~ Matrix m = ::real (m_cmplx);
       //~ std::streamsize n_bytes = 8 * static_cast<std::streamsize> (len);
       //~ os.write (reinterpret_cast<const char *> (m.data ()), n_bytes);
       //~ m = ::imag (m_cmplx);
       //~ os.write (reinterpret_cast<const char *> (m.data ()), n_bytes);
-    }
-  else if (tc.is_cell ())
-    {
-      octave_stdout << "is_cell()" << std::endl;
-      Cell cell = tc.cell_value ();
-
-      // swap first two dimensions, see also
-      // https://stackoverflow.com/questions/45855978/agreement-how-a-matrix-2d-is-stored-as-json
-      {
-        Array<int> p(dim_vector(cell.ndims(), 1));
-        for (int k = 2; k < cell.ndims(); ++k)
-          p(k) = k;
-        p(0) = 1;
-        p(1) = 0;
-        cell = cell.permute (p);
-      }
-
-      octave_stdout << "ndims() = " << cell.ndims () << std::endl;
-      dim_vector d = cell.dims ();
-      octave_stdout << "dims() = " << d.str() << std::endl;
-      
-      octave_idx_type *idx = new octave_idx_type[d.ndims()];
-      std::fill_n (idx, d.ndims(), 0);
-          
-      int r = d.ndims ();
-      if (d.isvector ())
-        r--;
-
-      for (int i = 0; i < r; ++i)
-        {
-          //cout << "StartArray" << endl;
-          writer.StartArray ();
-        }
-      do
-        {
-          octave_idx_type lidx = d.compute_index(idx);
-          //cout << "cell recursive call" << endl;
-          
-          save_element (writer, cell(lidx));
-
-          r = d.increment_index (idx, 0);
-          //cout << "r = " << r << endl;
-
-          for (int i = 0; i < r; ++i)
-            {
-              if (r == d.ndims ())
-                i++;
-              //cout << "EndArray" << endl;
-              writer.EndArray ();
-            }
-          if (r != d.ndims () && r > 0)
-            for (int i = 0; i < r; ++i)
-              {
-                //cout << "StartArray" << endl;
-                writer.StartArray ();
-              }
-
-        }
-      while (r != d.ndims ());
-  
     }
   else if (tc.is_map ())
     {

@@ -9,14 +9,15 @@ clear all
 #x.d = false;
 #save_json (x)
 
-load ("json_prg");
-json_prg = rmfield (json_prg, "cplan")
-json_prg = rmfield (json_prg, "steps_and_params")
+#load ("json_prg");
+#json_prg = rmfield (json_prg, "cplan")
+#json_prg = rmfield (json_prg, "steps_and_params")
 #save_json (json_prg)
 
 #a.Richtung = "Zug";
 #save_json (a)
 
 
-a = {4,5,6}
+#a = {4,5,6}
+a = [1 2 3]
 save_json (a)

@@ -135,14 +135,10 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
   DBG_OUT(is_dq_string)
   DBG_OUT(is_range)
   DBG_OUT(is_map)
-#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION >= 2
   DBG_OUT(is_classdef_meta)
+  DBG_OUT(is_classdef_object)
   DBG_OUT(is_classdef_superclass_ref)
   DBG_OUT(is_package)
-  DBG_OUT(islogical)
-#endif
-
-  DBG_OUT(is_classdef_object)
   DBG_OUT(is_object)
   DBG_OUT(is_java)
   DBG_OUT(is_cs_list)
@@ -160,6 +156,7 @@ bool save_element (Writer<StringBuffer> &writer, const octave_value& tc)
   DBG_OUT(is_uint32_type)
   DBG_OUT(is_uint64_type)
   DBG_OUT(is_integer_type)
+  DBG_OUT(islogical)
   DBG_OUT(is_bool_type)
   DBG_OUT(is_real_type)
   DBG_OUT(is_complex_type)
@@ -210,7 +207,7 @@ if (! tc.is_cell ())
       // save_json(["foo"; "foobar"; "baz"])
       // ergibt ["foo   ","foobar","baz   "]
 
-      //unwind_protect frame;
+      octave::unwind_protect frame;
 
       charMatrix chm = tc.char_matrix_value ();
 
@@ -305,8 +302,8 @@ if (! tc.is_cell ())
               //cout << "[" << endl;;
             }
 
-          octave_idx_type *idx = new octave_idx_type[d.length()];
-          std::fill_n (idx, d.length(), 0);
+          octave_idx_type *idx = new octave_idx_type[d.ndims()];
+          std::fill_n (idx, d.ndims(), 0);
 
           for (int k = 0; k < m.numel(); ++k)
             {
@@ -322,7 +319,7 @@ if (! tc.is_cell ())
                   //cout << "]" << endl;
                 }
 
-              if (r > 0 && r != d.length ())
+              if (r > 0 && r != d.ndims ())
                 for (int i = 0; i < r; ++i)
                   {
                     writer.StartArray();
@@ -370,11 +367,11 @@ if (! tc.is_cell ())
       dim_vector d = cell.dims ();
       octave_stdout << "dims() = " << d.str() << std::endl;
       
-      octave_idx_type *idx = new octave_idx_type[d.length()];
-      std::fill_n (idx, d.length(), 0);
+      octave_idx_type *idx = new octave_idx_type[d.ndims()];
+      std::fill_n (idx, d.ndims(), 0);
           
-      int r = d.length ();
-      if (d.is_vector ())
+      int r = d.ndims ();
+      if (d.isvector ())
         r--;
 
       for (int i = 0; i < r; ++i)
@@ -394,12 +391,12 @@ if (! tc.is_cell ())
 
           for (int i = 0; i < r; ++i)
             {
-              if (r == d.length ())
+              if (r == d.ndims ())
                 i++;
               //cout << "EndArray" << endl;
               writer.EndArray ();
             }
-          if (r != d.length () && r > 0)
+          if (r != d.ndims () && r > 0)
             for (int i = 0; i < r; ++i)
               {
                 //cout << "StartArray" << endl;
@@ -407,7 +404,7 @@ if (! tc.is_cell ())
               }
 
         }
-      while (r != d.length ());
+      while (r != d.ndims ());
   
     }
   else if (tc.is_map ())

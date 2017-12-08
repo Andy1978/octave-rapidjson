@@ -18,9 +18,20 @@
 
 #ifndef _DEBUG_H_
 #define _DEBUG_H_
+
 #ifdef DEBUG
 #include <iomanip>
 #include <iostream>
+
+// d = depth
+// a = first user defined parameter
+// b = second user defined parameter
+
+// example:
+// DBG_MSG2 (5, "foo", 8);
+// writes to stdout:
+// -----save_json.cc:save_matrix   :113  foo 8
+
 #define DBG_MSG2(d, a, b) for (int __k__ = 0; __k__ < d; ++__k__) std::cout << "-";\
                    std::cout << std::setw (15 - d) << std::left\
                              << __FILE__ << ":"\
@@ -28,9 +39,17 @@
                              << std::setw (4) << __LINE__ << " ";\
                    std::cout << a << " "\
                              << b << std::endl
+
+// wie oben aber mit zweitem Parameter ""
 #define DBG_MSG1(d, a) DBG_MSG2(d, a, "")
-#else
+
+#define DBG_OUT(x) cout << "  " << #x << " = " << x << endl;
+
+#else //DEBUG on defined
 #define DBG_MSG2(d, a, b)
 #define DBG_MSG1(d, a)
+#define DBG_CALL(x)
+#define DBG_OUT(x)
 #endif
+
 #endif
