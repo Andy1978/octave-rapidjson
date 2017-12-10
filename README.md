@@ -2,24 +2,124 @@
 
 [GNU Octave](https://www.gnu.org/software/octave/) wrapper around [RapidJSON](http://rapidjson.org/)
 
-## Ready for test
+## Foreword
 
-* `load_json (json_string)`. If you want to parse from file use `load_json (fileread (filename))`
-* `save_json (obj)`
+These functions doesn't try to be compatible with MATLABs jsondecode/jsonencode or JSONlab.
 
-## ToDo
+## Function and known limitations
 
-* ~~Add many, many tests and "make check" target to Makefile~~
-* ~~Implement 2D arrays (Matrix) and later N-dimensional arrays~~
-* ~~Implement `save_json (obj)`~~
+### `load_json (json_string)`
 
-## Optimization ideas
+Importing data from a JSON string tries to preserve the datatype whenever possible and if this doesn't slown down the import.
 
-* ~~Start reading a JSON array to a Octave Matrix (not Cell as it's currently done).
-  As soon as the first non-numerical value is encountered, copy the already
-  read data into a Cell and keep processing. I think this may be a better approach
-  than the current used (store all into cell and convert afterwards to Matrix if values are numeric)
-  because the usual user might store numerical matrices and not mixed ones.~~ finished with 7a4156a4da8751931d5e76c65e115e75808065fb
+```
+octave> x = load_json ('{"a":5, "b":3.14156}')
+x =
+
+  scalar structure containing the fields:
+
+    a = 5
+    b =  3.1416
+
+octave> typeinfo (x.a)
+ans = uint32 scalar
+octave> typeinfo (x.b)
+ans = scalar
+```
+
+N-dimensional matrices are returned as `matrix` (aka "double matrix")
+
+```
+octave> x = load_json ('[3,4,5]')
+x =
+
+   3   4   5
+
+octave> typeinfo (x)
+ans = matrix
+```
+
+As soon as one element in a JSON array can't mapped to a double value, a cell is returned:
+
+```
+octave> x = load_json ('[2, "foo", 3.14]')
+x =
+{
+  [1,1] =  2
+  [1,2] = foo
+  [1,3] =  3.1400
+}
+```
+
+#### load from file
+
+ If you want to parse from a file use `load_json (fileread (filename))`
+
+
+### `save_json (obj)`
+
+* Saving a `matrix` always gives `double` values in JSON
+
+
+Converting a struct array to JSON "unpacks" the struct array but I've been told by javascript programmers that this would be  
+the expected behaviour...
+
+```
+octave> foo(1).a = 3;
+octave> foo(1).b = pi;
+octave> foo(2).a = 5;
+octave> foo(2).b = 2.718;
+octave> save_json (foo)
+ans = [
+    {
+        "a": 3.0,
+        "b": 3.141592653589793
+    },
+    {
+        "a": 5.0,
+        "b": 2.718
+    }
+]
+
+```
+
+If you want to read it back (and collapse the unpacked struct) you can do:
+
+```
+
+octave> load_json (ans)
+ans =
+{
+  [1,1] =
+
+    scalar structure containing the fields:
+
+      a =  3
+      b =  3.1416
+
+  [1,2] =
+
+    scalar structure containing the fields:
+
+      a =  5
+      b =  2.7180
+
+}
+
+octave> x = [ans{:}]
+x =
+
+  1x2 struct array containing the fields:
+
+    a
+    b
+```
+
+
+## Known problems / bugs
+
+* Can't save integer matrices: `save_json (uint8([4 5 6]))`
+
 
 ## Side note
 
