@@ -261,7 +261,7 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
   DBG_MSG2(0, "json = ", json);
 
   rapidjson::StringStream ss(json.c_str());
-  rapidjson::ParseResult ok = reader.Parse(ss, handler);
+  rapidjson::ParseResult ok = reader.Parse<rapidjson::kParseNanAndInfFlag>(ss, handler);
 
   //rapidjson::Document d;
   //rapidjson::ParseResult ok = d.ParseStream(ss);
@@ -274,6 +274,8 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
       if (int(ok.Offset()) - left < 0)
         left = ok.Offset();
 
+      // FIXME: this writes to stdout even when running "test load_json"
+      // -> find a way to handle this better
       std::cout << "JSON Debug:" << json.substr (ok.Offset() - left, left + HALF_DBG_OUT + 1) << endl;
       std::cout << "JSON Debug:";
       for (int k = 0; k < left; ++k)
@@ -323,6 +325,10 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
 %! json = '[[2.1],[3.4],[1.6]]';
 %! r = load_json (json);
 %! assert (r, [2.1, 3.4, 1.6].', eps)
+
+# NaN/Inf is a JSON extension (not in the standard)
+%!test
+%! assert (load_json ("[NaN, Inf, -Inf]"), [NaN, Inf, -Inf])
 
 %!error <'Invalid value.' at offset 5> load_json ('[1,2,,3]');
 %!error <'Missing a colon after a name of object member.' at offset 5> load_json ('{"a" 5}');

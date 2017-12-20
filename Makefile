@@ -4,8 +4,8 @@ CXXFLAGS = `pkg-config --cflags RapidJSON`
 
 TARGETS= load_json.oct save_json.oct
 
-#MKOCT= mkoctfile-4.2.0
-MKOCT= mkoctfile-4.3.0+ -Wno-deprecated-declarations
+MKOCT= mkoctfile-4.2.1
+#MKOCT= mkoctfile-4.3.0+ -Wno-deprecated-declarations
 
 all: $(TARGETS)
 
@@ -15,8 +15,9 @@ all: $(TARGETS)
 style:
 	astyle --style=gnu -s2 -n *.cc
 
-check: load_json.oct
-	octave --no-gui --eval "test load_json"
+check: load_json.oct save_json.oct
+	octave --no-gui-libs --eval "test load_json"
+	octave --no-gui-libs --eval "test save_json"
 
 clean:
 	rm -f *.o *.oct octave-workspace

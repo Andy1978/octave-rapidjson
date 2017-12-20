@@ -32,8 +32,8 @@
 using namespace rapidjson;
 using namespace std;
 
-template <typename T> void save_matrix (PrettyWriter<StringBuffer> &writer, T);
-bool save_element (PrettyWriter<StringBuffer> &writer, const octave_value& tc);
+template <typename T> void save_matrix (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWriteNanAndInfFlag> &writer, T);
+bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWriteNanAndInfFlag> &writer, const octave_value& tc);
 
 DEFUN_DLD (save_json, args,, "save_json (obj)")
 {
@@ -41,15 +41,15 @@ DEFUN_DLD (save_json, args,, "save_json (obj)")
 
   if (nargs != 1)
     print_usage ();
-  
+
   StringBuffer s;
-  PrettyWriter<StringBuffer> writer(s);
+  PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWriteNanAndInfFlag> writer(s);
   save_element (writer, args(0));
 
   return ovl (s.GetString());
 }
 
-template <typename T> void save_matrix (PrettyWriter<StringBuffer> &writer, T m)
+template <typename T> void save_matrix (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWriteNanAndInfFlag> &writer, T m)
 {
   DBG_OUT(m.numel ());
   DBG_OUT(m.ndims ());
@@ -134,7 +134,7 @@ template <typename T> void save_matrix (PrettyWriter<StringBuffer> &writer, T m)
 
 }
 
-bool save_element (PrettyWriter<StringBuffer> &writer, const octave_value& tc)
+bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWriteNanAndInfFlag> &writer, const octave_value& tc)
 {
 #ifdef DEBUG
   std::cout << "-------------- save_element --------------------" << std::endl;
@@ -167,7 +167,7 @@ bool save_element (PrettyWriter<StringBuffer> &writer, const octave_value& tc)
   DBG_OUT(tc.is_dq_string());
   DBG_OUT(tc.is_range());
   DBG_OUT(tc.is_map());
-#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION >= 2
+#if OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION > 2
   DBG_OUT(tc.is_classdef_meta());
   DBG_OUT(tc.is_classdef_superclass_ref());
   DBG_OUT(tc.is_package());
@@ -211,10 +211,12 @@ bool save_element (PrettyWriter<StringBuffer> &writer, const octave_value& tc)
   DBG_OUT(tc.is_dld_function());
   DBG_OUT(tc.is_mex_function());
 
-if (! tc.is_cell ())
-  {
-    DBG_OUT(tc.is_true());  // not defined for cell
-  }
+  //~ if (! tc.is_cell ())
+    //~ {
+      //~ DBG_OUT(tc.is_true());  // not defined for cell
+      //~ // FIXME: if tc is a double and NaN, this method shows an error:
+      //~ // invalid conversion from NaN to logical
+    //~ }
 
 #endif
 
@@ -235,7 +237,7 @@ if (! tc.is_cell ())
     }
   else if (tc.is_string ())
     {
-
+      DBG_MSG1(0, "");
       if (tc.is_empty ())
         writer.String ("");
       else
@@ -270,6 +272,7 @@ if (! tc.is_cell ())
     }
   else if (tc.is_range ())
     {
+      DBG_MSG1(0, "");
       Range r = tc.range_value ();
 
       // FIXME: Should a range be stored separately
@@ -289,15 +292,18 @@ if (! tc.is_cell ())
     }
   else if (tc.is_bool_scalar ())
     {
-       writer.Bool (tc.bool_value ());
+      DBG_MSG1(0, "");
+      writer.Bool (tc.bool_value ());
     }
   else if (tc.is_bool_matrix ())
     {
-       boolNDArray b = tc.bool_array_value ();
-       save_matrix (writer, b);
+      DBG_MSG1(0, "");
+      boolNDArray b = tc.bool_array_value ();
+      save_matrix (writer, b);
     }
   else if (tc.is_real_scalar ())
     {
+      DBG_MSG1(0, "");
       if (tc.is_integer_type ())
         writer.Int(tc.int_value ());
       else if (tc.is_real_type ())
@@ -307,21 +313,25 @@ if (! tc.is_cell ())
     }
   else if (tc.is_real_matrix ())
     {
+      DBG_MSG1(0, "");
       NDArray m = tc.array_value ();
       save_matrix (writer, m);
     }
   else if (tc.is_cell ())
     {
+      DBG_MSG1(0, "");
       Cell cell = tc.cell_value ();
       save_matrix (writer, cell);
     }
   else if (tc.is_complex_scalar ())
     {
+      DBG_MSG1(0, "");
       //Complex tmp = tc.complex_value ();
       //~ os.write (reinterpret_cast<char *> (&tmp), 16);
     }
   else if (tc.is_complex_matrix ())
     {
+      DBG_MSG1(0, "");
       ComplexMatrix m_cmplx = tc.complex_matrix_value ();
       //~ Matrix m = ::real (m_cmplx);
       //~ std::streamsize n_bytes = 8 * static_cast<std::streamsize> (len);
@@ -331,6 +341,7 @@ if (! tc.is_cell ())
     }
   else if (tc.is_map ())
     {
+      DBG_MSG1(0, "");
       octave_map m = tc.map_value ();
 
       //char buf[64];
@@ -392,6 +403,7 @@ if (! tc.is_cell ())
     }
   else if (tc.is_integer_type())
     {
+      DBG_MSG1(0, "");
       cout << "tc.is_integer_type() = " << tc.is_integer_type() << endl;
     }
   else
@@ -482,4 +494,12 @@ if (! tc.is_cell ())
 %! b(3).c = 2.718;
 %! c = load_json (save_json (b));
 %! assert ([c{:}], b, eps)
+
+*** NaN, Inf, -Inf (not standard JSON) ***
+
+%!test
+%! x = [NaN, Inf, -Inf];
+%! c = load_json (save_json (x));
+%! assert (c, x);
+
 */
