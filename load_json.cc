@@ -137,7 +137,7 @@ public:
   bool Null()
   {
     DBG_MSG1 (0, "");
-    ps.back()->push_back (Matrix());
+    ps.back()->push_back (lo_ieee_na_value ());
     return true;
   }
 
@@ -297,7 +297,7 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
 %! assert (r.hello, "world")
 %! assert (r.t, true)
 %! assert (r.f, false)
-%! assert (r.n, [])
+%! assert (r.n, NA)
 %! assert (r.i, int32 (-123))
 %! assert (r.u, uint32 (456))
 %! assert (r.pi, pi, 1e-5)

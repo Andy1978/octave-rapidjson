@@ -56,7 +56,10 @@ template <typename T> void save_matrix (PrettyWriter<StringBuffer, UTF8<>, UTF8<
 
   // T can be NDArray or Cell
   if (m.is_empty ())
-    writer.Null ();
+    {
+      writer.StartArray ();
+      writer.EndArray ();
+    }
   else
     {
 
@@ -307,7 +310,13 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
       if (tc.is_integer_type ())
         writer.Int(tc.int_value ());
       else if (tc.is_real_type ())
-        writer.Double (tc.double_value ());
+        {
+          double val = tc.double_value ();
+          if (octave::math::is_NA (val))
+            writer.Null ();
+          else
+            writer.Double (val);
+        }
       else if (tc.is_complex_type ())
         error ("complex not yet supported");
     }
@@ -499,6 +508,16 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
 
 %!test
 %! x = [NaN, Inf, -Inf];
+%! c = load_json (save_json (x));
+%! assert (c, x);
+
+*** mapping Octave <-> JSON ***
+***         NA     <-> null ***
+***         []     <-> []   ***
+
+%!test
+%! x.foo = NA;
+%! x.bar = [];
 %! c = load_json (save_json (x));
 %! assert (c, x);
 

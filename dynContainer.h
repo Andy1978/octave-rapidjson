@@ -88,6 +88,11 @@ private:
   void resize (dim_vector d)
     {
       //cout << "resize called " << vector_to_string(d) << endl;
+
+      // make empty matrix with size [0, 1] => [0, 0]
+      if (d.numel () == 0 && d(1) == 1)
+        d(1) = 0;
+
       if (array_is_numeric)
         DynArray.resize (d);
       else
