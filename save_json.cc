@@ -312,7 +312,9 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
       else if (tc.is_real_type ())
         {
           double val = tc.double_value ();
-          if (octave::math::is_NA (val))
+          // FIXME: deprecated
+          //if (octave::math::is_NA (val))
+          if (octave_is_NA (val))
             writer.Null ();
           else
             writer.Double (val);
