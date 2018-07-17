@@ -2,11 +2,21 @@
 
 [GNU Octave](https://www.gnu.org/software/octave/) wrapper around [RapidJSON](http://rapidjson.org/)
 
-## Foreword
+These wrapper doesn't try to be compatible with jsondecode/jsonencode or JSONlab.
 
-These functions doesn't try to be compatible with MATLABs jsondecode/jsonencode or JSONlab.
+Instead it tries to map GNU Octave data structures as close as possible to JSON and back so
+that loading a JSON, manipulate it in Octave and store it back alters as less as possible and ideally doesn't
+change, or alter the type, of the untouched data.
 
-## Function and known limitations
+So the major design goal is that in GNU Octave
+
+```
+assert (load_json (save_json (foo)), foo)
+```
+
+works for almost any type of "foo".
+
+## Function
 
 ### `load_json (json_string)`
 
@@ -115,11 +125,34 @@ x =
     b
 ```
 
+### Handling of NA, NaN, []
 
-## Known problems / bugs
+|GNU Octave| JSON |
+|:--------:|:----:|
+|NA        |"null"|
+|NaN       |"NaN" |
+|[]        |"[]"  |
+
+```
+octave:1> save_json (NA)
+ans = null
+octave:2> save_json ([])
+ans = []
+octave:3> save_json (NaN)
+ans = NaN
+octave:4> load_json ("null")
+ans = NA
+octave:4> load_json ("[]")
+ans = [](0x0)
+octave:5> load_json ("NaN")
+ans = NaN
+```
+
+Using "NaN" in JSON is an extension and may not be comaptible with other libraries.
+
+## Known problems / bugs / ToDo
 
 * Can't save integer matrices: `save_json (uint8([4 5 6]))`
-
 
 ## Side note
 
