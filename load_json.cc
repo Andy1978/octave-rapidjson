@@ -269,6 +269,7 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
   if (! ok)
     {
       // show substring with error
+#ifdef DEBUG
 #define HALF_DBG_OUT 10
       int left = HALF_DBG_OUT;
       if (int(ok.Offset()) - left < 0)
@@ -281,7 +282,7 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
       for (int k = 0; k < left; ++k)
         std::cout << " ";
       std::cout << "^" << endl;;
-
+#endif
       error ("JSON parse error: '%s' at offset %u",
              rapidjson::GetParseError_En (ok.Code()),
              ok.Offset());
