@@ -55,7 +55,7 @@ template <typename T> void save_matrix (PrettyWriter<StringBuffer, UTF8<>, UTF8<
   DBG_OUT(m.ndims ());
 
   // T can be NDArray or Cell
-  if (m.is_empty ())
+  if (m.isempty ())
     {
       writer.StartArray ();
       writer.EndArray ();
@@ -149,7 +149,7 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
   // einfach mal alle "is"
   // egrep "bool is_[a-z_]*" libinterp/octave-value/ov.h | sed s/bool//g
 
-#if 1
+#if 0
   DBG_OUT(tc.is_zero_by_zero());
   DBG_OUT(tc.is_defined());
   DBG_OUT(tc.is_undefined());
@@ -223,10 +223,10 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
 
 #endif
 
-  if (tc.is_sparse_type ())
+  if (tc.issparse ())
     {
 #ifdef DEBUG
-      std::cout << "issparse, nnz = " <<  tc.nnz () << ", iscomplex = " << tc.is_complex_type () << std::endl;
+      std::cout << "issparse, nnz = " <<  tc.nnz () << ", iscomplex = " << tc.iscomplex () << std::endl;
 #endif
       error ("JSON can't handle sparse matrix, convert to full matrix first (using 'full')");
     }
@@ -234,14 +234,14 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
     {
       error ("Can't store inline function into JSON");
     }
-  else if (tc.is_object ())
+  else if (tc.isobject ())
     {
       error ("Can't store object into JSON");
     }
   else if (tc.is_string ())
     {
       DBG_MSG1(0, "");
-      if (tc.is_empty ())
+      if (tc.isempty ())
         writer.String ("");
       else
         {
@@ -307,19 +307,19 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
   else if (tc.is_real_scalar ())
     {
       DBG_MSG1(0, "");
-      if (tc.is_integer_type ())
+      if (tc.isinteger ())
         writer.Int(tc.int_value ());
-      else if (tc.is_real_type ())
+      else if (tc.isreal ())
         {
           double val = tc.double_value ();
           // FIXME: deprecated
           //if (octave::math::is_NA (val))
-          if (octave_is_NA (val))
+          if (octave::math::isna (val))
             writer.Null ();
           else
             writer.Double (val);
         }
-      else if (tc.is_complex_type ())
+      else if (tc.iscomplex ())
         error ("complex not yet supported");
     }
   else if (tc.is_real_matrix ())
@@ -328,7 +328,7 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
       NDArray m = tc.array_value ();
       save_matrix (writer, m);
     }
-  else if (tc.is_cell ())
+  else if (tc.iscell ())
     {
       DBG_MSG1(0, "");
       Cell cell = tc.cell_value ();
@@ -350,7 +350,7 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
       //~ m = ::imag (m_cmplx);
       //~ os.write (reinterpret_cast<const char *> (m.data ()), n_bytes);
     }
-  else if (tc.is_map ())
+  else if (tc.isstruct ())
     {
       DBG_MSG1(0, "");
       octave_map m = tc.map_value ();
@@ -412,10 +412,10 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
       // ich glaube letzteres ist wohl bei JSONiander üblicher...
 
     }
-  else if (tc.is_integer_type())
+  else if (tc.isinteger())
     {
       DBG_MSG1(0, "");
-      cout << "tc.is_integer_type() = " << tc.is_integer_type() << endl;
+      cout << "tc.is_integer_type() = " << tc.isinteger() << endl;
     }
   else
     error ("not yet implemented");
