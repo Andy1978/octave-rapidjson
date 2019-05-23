@@ -449,6 +449,20 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
 %! a = [true false];
 %! assert (save_json (a), "[\n    true,\n    false\n]");
 
+*** integers ***
+
+%!test
+%! a = int8([-50 1 5 50]);
+%! assert (load_json (save_json (a)), a);
+
+%!test
+%! a = uint8([1 5 50]);
+%! assert (load_json (save_json (a)), a);
+
+%!test
+%! a = uint16([0 5 2^16-1]);
+%! assert (load_json (save_json (a)), a);
+
 *** scalars ***
 
 %!test
