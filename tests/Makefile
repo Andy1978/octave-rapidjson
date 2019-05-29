@@ -14,6 +14,8 @@ style:
 
 check: test_dynContainer
 	./test_dynContainer
+	./check_load_save_roundtrip.sh medium1.json
+	./check_load_save_roundtrip.sh big1.json
 
 clean:
 	rm -f *.o *.oct octave-workspace
