@@ -1,4 +1,6 @@
-# octave-rapidjson, a JSON parser for GNU Octave
+# octave-rapidjson, a JSON parser for GNU Octave >= 5.0
+
+**This is branch octave5.0. See branch octave4.4 for compatibility with GNU Octave <= 4.4**
 
 [GNU Octave](https://www.gnu.org/software/octave/) wrapper around [RapidJSON](http://rapidjson.org/)
 
