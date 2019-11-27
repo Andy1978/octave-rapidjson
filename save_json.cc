@@ -98,7 +98,6 @@ template <typename T> void save_matrix (PrettyWriter<StringBuffer, UTF8<>, UTF8<
         {
           octave_idx_type linear_idx = d.compute_index (idx);
 
-
           // FIXME: hier prüfen, ob es sich um eine Nicht-Cell Matrix handelt,
           // wenn ja, dann kann man sich den rekursiven Aufruf sparen und
           // ggf. mehr Geschwindigkeit rausholen
@@ -322,11 +321,13 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
       else if (tc.iscomplex ())
         error ("complex not yet supported");
     }
-  else if (tc.is_real_matrix ())
+  else if (tc.is_matrix_type ())
     {
       DBG_MSG1(0, "");
-      NDArray m = tc.array_value ();
-      save_matrix (writer, m);
+      if (tc.isinteger ())
+        save_matrix (writer, tc.int32_array_value ());
+      else
+        save_matrix (writer, tc.array_value ());
     }
   else if (tc.iscell ())
     {
@@ -449,20 +450,6 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
 %! a = [true false];
 %! assert (save_json (a), "[\n    true,\n    false\n]");
 
-*** integers ***
-
-%!test
-%! a = int8([-50 1 5 50]);
-%! assert (load_json (save_json (a)), a);
-
-%!test
-%! a = uint8([1 5 50]);
-%! assert (load_json (save_json (a)), a);
-
-%!test
-%! a = uint16([0 5 2^16-1]);
-%! assert (load_json (save_json (a)), a);
-
 *** scalars ***
 
 %!test
@@ -536,5 +523,28 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
 %! x.bar = [];
 %! c = load_json (save_json (x));
 %! assert (c, x);
+
+%!function out = rm_ws (in)
+%!  ## remove whitespace
+%!  out = regexprep (save_json (in), "[[:space:]]", "");
+%!endfunction
+
+*** integers ***
+
+%!test
+%! a = int8([-50 1 5 50]);
+%! assert (rm_ws (a), "[-50,1,5,50]");
+
+%!test
+%! a = uint8([1 5 50]);
+%! assert (rm_ws (a), "[1,5,50]");
+
+%!test
+%! a = uint16([0 5 2^16-1]);
+%! assert (rm_ws (a), "[0,5,65535]");
+
+%!test
+%! a = int16([0 5 10; 45 55 65]);
+%! assert (rm_ws (a), "[[0,5,10],[45,55,65]]");
 
 */
