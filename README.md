@@ -1,16 +1,11 @@
-# octave-rapidjson, a JSON parser for GNU Octave >= 5.0
-
-**This is branch octave5.0. See branch octave4.4 for compatibility with GNU Octave <= 4.4**
+# octave-rapidjson, a JSON parser for GNU Octave >= 3.8
 
 [GNU Octave](https://www.gnu.org/software/octave/) wrapper around [RapidJSON](http://rapidjson.org/)
 
 These wrapper doesn't try to be compatible with jsondecode/jsonencode or JSONlab.
 
-Instead it tries to map GNU Octave data structures as close as possible to JSON and back so
-that loading a JSON, manipulate it in Octave and store it back alters as less as possible and ideally doesn't
-change, or alter the type, of the untouched data.
-
-So the major design goal is that in GNU Octave
+Instead it tries to map GNU Octave data structures as close as possible
+to JSON and back. So the major design goal is that in GNU Octave
 
 ```
 assert (load_json (save_json (foo)), foo)
@@ -153,8 +148,6 @@ ans = NaN
 Using "NaN" in JSON is an extension and may not be comaptible with other libraries.
 
 ## Known problems / bugs / ToDo
-
-* Can't save integer matrices: `save_json (uint8([4 5 6]))`
 
 ## Side note
 
