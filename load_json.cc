@@ -283,7 +283,7 @@ DEFUN_DLD (load_json, args,, "load_json (json_str)")
         std::cout << " ";
       std::cout << "^" << endl;;
 #endif
-      error ("JSON parse error: '%s' at offset %u",
+      error ("JSON parse error: '%s' at offset %zu",
              rapidjson::GetParseError_En (ok.Code()),
              ok.Offset());
     }

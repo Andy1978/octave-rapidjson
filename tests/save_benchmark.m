@@ -1,3 +1,5 @@
+# compare with jsonlab
+
 addpath ("../")
 addpath ("~/src/jsonlab/");
 

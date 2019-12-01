@@ -29,6 +29,33 @@
 //#define DEBUG
 #include "debug.h"
 
+// starting with 4.4, the is_* style methods were deprecated
+// see also https://sourceforge.net/p/octave/image/ci/default/tree/src/octave-wrappers.h
+
+#if (OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION <= 4) || OCTAVE_MAJOR_VERSION < 4
+#define IS_BOOL tc.is_bool_type ()
+#define IS_EMPTY(x) x.is_empty ()
+#define IS_SPARSE(x) x.is_sparse_type ()
+#define IS_OBJECT(x) x.is_object ()
+#define IS_INT(x) x.is_integer_type ()
+#define IS_REAL(x) x.is_real_type ()
+#define IS_COMPLEX(x) x.is_complex_type ()
+#define IS_NA(x) octave::math::is_NA (x)
+#define IS_STRUCT(x) x.is_map ()
+#define IS_CELL(x) x.is_cell ()
+#else
+#define IS_BOOL tc.islogical ()
+#define IS_EMPTY(x) x.isempty ()
+#define IS_SPARSE(x) x.issparse ()
+#define IS_OBJECT(x) x.isobject ()
+#define IS_INT(x) x.isinteger ()
+#define IS_REAL(x) x.isreal ()
+#define IS_COMPLEX(x) x.iscomplex ()
+#define IS_NA(x) octave::math::isna (x)
+#define IS_STRUCT(x) x.isstruct ()
+#define IS_CELL(x) x.iscell ()
+#endif
+
 using namespace rapidjson;
 using namespace std;
 
@@ -55,7 +82,7 @@ template <typename T> void save_matrix (PrettyWriter<StringBuffer, UTF8<>, UTF8<
   DBG_OUT(m.ndims ());
 
   // T can be NDArray or Cell
-  if (m.isempty ())
+  if (IS_EMPTY(m))
     {
       writer.StartArray ();
       writer.EndArray ();
@@ -214,15 +241,15 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
   DBG_OUT(tc.is_mex_function());
 
   //~ if (! tc.is_cell ())
-    //~ {
-      //~ DBG_OUT(tc.is_true());  // not defined for cell
-      //~ // FIXME: if tc is a double and NaN, this method shows an error:
-      //~ // invalid conversion from NaN to logical
-    //~ }
+  //~ {
+  //~ DBG_OUT(tc.is_true());  // not defined for cell
+  //~ // FIXME: if tc is a double and NaN, this method shows an error:
+  //~ // invalid conversion from NaN to logical
+  //~ }
 
 #endif
 
-  if (tc.issparse ())
+  if (IS_SPARSE(tc))
     {
 #ifdef DEBUG
       std::cout << "issparse, nnz = " <<  tc.nnz () << ", iscomplex = " << tc.iscomplex () << std::endl;
@@ -233,14 +260,14 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
     {
       error ("Can't store inline function into JSON");
     }
-  else if (tc.isobject ())
+  else if (IS_OBJECT(tc))
     {
       error ("Can't store object into JSON");
     }
   else if (tc.is_string ())
     {
       DBG_MSG1(0, "");
-      if (tc.isempty ())
+      if (IS_EMPTY(tc))
         writer.String ("");
       else
         {
@@ -306,30 +333,28 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
   else if (tc.is_real_scalar ())
     {
       DBG_MSG1(0, "");
-      if (tc.isinteger ())
+      if (IS_INT(tc))
         writer.Int(tc.int_value ());
-      else if (tc.isreal ())
+      else if (IS_REAL(tc))
         {
           double val = tc.double_value ();
-          // FIXME: deprecated
-          //if (octave::math::is_NA (val))
-          if (octave::math::isna (val))
+          if (IS_NA(val))
             writer.Null ();
           else
             writer.Double (val);
         }
-      else if (tc.iscomplex ())
+      else if (IS_COMPLEX(tc))
         error ("complex not yet supported");
     }
   else if (tc.is_matrix_type ())
     {
       DBG_MSG1(0, "");
-      if (tc.isinteger ())
+      if (IS_INT(tc))
         save_matrix (writer, tc.int32_array_value ());
       else
         save_matrix (writer, tc.array_value ());
     }
-  else if (tc.iscell ())
+  else if (IS_CELL(tc))
     {
       DBG_MSG1(0, "");
       Cell cell = tc.cell_value ();
@@ -351,7 +376,7 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
       //~ m = ::imag (m_cmplx);
       //~ os.write (reinterpret_cast<const char *> (m.data ()), n_bytes);
     }
-  else if (tc.isstruct ())
+  else if (IS_STRUCT(tc))
     {
       DBG_MSG1(0, "");
       octave_map m = tc.map_value ();
@@ -413,10 +438,10 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
       // ich glaube letzteres ist wohl bei JSONiander üblicher...
 
     }
-  else if (tc.isinteger())
+  else if (IS_INT(tc))
     {
       DBG_MSG1(0, "");
-      cout << "tc.is_integer_type() = " << tc.isinteger() << endl;
+      DBG_OUT(IS_INT(tc));
     }
   else
     error ("not yet implemented");
