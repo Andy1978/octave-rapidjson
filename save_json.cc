@@ -32,7 +32,7 @@
 // starting with 4.4, the is_* style methods were deprecated
 // see also https://sourceforge.net/p/octave/image/ci/default/tree/src/octave-wrappers.h
 
-#if (OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION <= 4) || OCTAVE_MAJOR_VERSION < 4
+#if (OCTAVE_MAJOR_VERSION == 4 && OCTAVE_MINOR_VERSION < 4) || OCTAVE_MAJOR_VERSION < 4
 #define IS_BOOL tc.is_bool_type ()
 #define IS_EMPTY(x) x.is_empty ()
 #define IS_SPARSE(x) x.is_sparse_type ()
