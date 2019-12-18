@@ -48,7 +48,6 @@
 #else //DEBUG on defined
 #define DBG_MSG2(d, a, b)
 #define DBG_MSG1(d, a)
-#define DBG_CALL(x)
 #define DBG_OUT(x)
 #endif
 
