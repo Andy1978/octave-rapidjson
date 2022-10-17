@@ -334,7 +334,7 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
     {
       DBG_MSG1(0, "");
       if (IS_INT(tc))
-        writer.Int(tc.int_value ());
+        writer.Int64(tc.int64_value ());
       else if (IS_REAL(tc))
         {
           double val = tc.double_value ();
@@ -350,7 +350,7 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
     {
       DBG_MSG1(0, "");
       if (IS_INT(tc))
-        save_matrix (writer, tc.int32_array_value ());
+        save_matrix (writer, tc.int64_array_value ());
       else
         save_matrix (writer, tc.array_value ());
     }
@@ -571,5 +571,13 @@ bool save_element (PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWri
 %!test
 %! a = int16([0 5 10; 45 55 65]);
 %! assert (rm_ws (a), "[[0,5,10],[45,55,65]]");
+
+%!test
+%! a = uint64([4500139062]);
+%! assert (rm_ws (a), "4500139062");
+
+%!test
+%! a = int64([4500139062, -4500139062]);
+%! assert (rm_ws (a), "[4500139062,-4500139062]");
 
 */
